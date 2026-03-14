@@ -152,8 +152,8 @@ async function getDeviceStatus(deviceId: string): Promise<DeviceStatus | null> {
 
 // ── Logging (fire-and-forget) ─────────────────────────────────────────────────
 
-function logQuery(deviceId: string, domain: string, blocked: boolean) {
-  void supabase
+async function logQuery(deviceId: string, domain: string, blocked: boolean) {
+  await supabase
     .from("dns_logs")
     .insert({
       device_id: deviceId,
@@ -163,9 +163,8 @@ function logQuery(deviceId: string, domain: string, blocked: boolean) {
     });
 }
 
-/** Bump last_connected on first query of each session (best-effort). */
-function updateLastConnected(deviceId: string) {
-  void supabase
+async function updateLastConnected(deviceId: string) {
+  await supabase
     .from("devices")
     .update({ last_connected: new Date().toISOString() })
     .eq("id", deviceId);
@@ -191,10 +190,12 @@ async function processQuery(
     }
   }
 
-  // Log (non-blocking)
+  // Log and update device (awaited — fire-and-forget is unreliable in serverless)
   if (domain) {
-    logQuery(token, domain, shouldBlock);
-    updateLastConnected(token);
+    await Promise.all([
+      logQuery(token, domain, shouldBlock),
+      updateLastConnected(token),
+    ]);
   }
 
   if (shouldBlock) {
