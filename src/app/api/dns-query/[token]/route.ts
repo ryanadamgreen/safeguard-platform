@@ -1,4 +1,4 @@
-import { dnsMonitorStore } from "@/lib/dns-monitor-store";
+import { supabase } from "@/lib/supabase";
 
 /**
  * DoH endpoint — RFC 8484
@@ -9,8 +9,8 @@ import { dnsMonitorStore } from "@/lib/dns-monitor-store";
  *   GET  /api/dns-query/<token>?dns=<base64url-encoded-dns-message>
  *   POST /api/dns-query/<token>    body: raw DNS wire format
  *
- * The mobileconfig profile sets:
- *   ServerURL = https://<host>/api/dns-query/<deviceId>
+ * Every DNS query is logged to the dns_logs Supabase table (fire-and-forget
+ * so it never adds latency to the DNS response itself).
  *
  * Filtering logic (block rules, time schedules) will be added here later.
  * For now, all queries are forwarded to Cloudflare and logged.
@@ -54,6 +54,16 @@ function parseDNSQuestion(data: Uint8Array): string | null {
   return domain;
 }
 
+// ── Log to Supabase (fire-and-forget) ────────────────────────────────────────
+
+function logQuery(deviceId: string, domain: string) {
+  supabase
+    .from("dns_logs")
+    .insert({ device_id: deviceId, domain, timestamp: new Date().toISOString() })
+    .then(() => {})
+    .catch(() => {});
+}
+
 // ── Route handlers ────────────────────────────────────────────────────────────
 
 export async function GET(
@@ -71,13 +81,7 @@ export async function GET(
   const dnsBytes = Buffer.from(dnsParam, "base64url");
   const domain = parseDNSQuestion(new Uint8Array(dnsBytes));
 
-  if (domain) {
-    dnsMonitorStore.addEntry({
-      device_id: token,
-      domain,
-      timestamp: new Date().toISOString(),
-    });
-  }
+  if (domain) logQuery(token, domain);
 
   try {
     const upstream = await fetch(
@@ -106,13 +110,7 @@ export async function POST(
 
   const domain = parseDNSQuestion(dnsBytes);
 
-  if (domain) {
-    dnsMonitorStore.addEntry({
-      device_id: token,
-      domain,
-      timestamp: new Date().toISOString(),
-    });
-  }
+  if (domain) logQuery(token, domain);
 
   try {
     const upstream = await fetch(UPSTREAM_DOH, {

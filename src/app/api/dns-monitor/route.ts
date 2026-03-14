@@ -1,78 +1,44 @@
 import { NextResponse } from "next/server";
-import { dnsMonitorStore } from "@/lib/dns-monitor-store";
-
-/**
- * POST /api/dns-monitor
- *
- * Receives DNS query logs from the iOS SafeGuard app.
- * Body: { device_id: string, domain: string, timestamp: string }
- *   or: { device_id: string, queries: [{ domain, timestamp }] } for batch
- */
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-
-    // Support single entry or batch
-    if (body.queries && Array.isArray(body.queries)) {
-      for (const q of body.queries) {
-        dnsMonitorStore.addEntry({
-          device_id: body.device_id ?? "unknown",
-          domain: q.domain,
-          timestamp: q.timestamp ?? new Date().toISOString(),
-        });
-      }
-      return NextResponse.json({
-        message: `Received ${body.queries.length} queries`,
-        count: dnsMonitorStore.getCount(),
-      });
-    }
-
-    // Single entry
-    dnsMonitorStore.addEntry({
-      device_id: body.device_id ?? "unknown",
-      domain: body.domain,
-      timestamp: body.timestamp ?? new Date().toISOString(),
-    });
-
-    return NextResponse.json({
-      message: `Logged: ${body.domain}`,
-      count: dnsMonitorStore.getCount(),
-    });
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid request body" },
-      { status: 400 }
-    );
-  }
-}
+import { supabase } from "@/lib/supabase";
 
 /**
  * GET /api/dns-monitor
- *
- * Returns recent DNS query logs for the monitoring dashboard.
- * Query params: ?limit=100
+ * Returns recent DNS query logs from the dns_logs Supabase table.
+ * Query params: ?limit=200
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const limit = parseInt(searchParams.get("limit") ?? "100", 10);
+  const limit = Math.min(parseInt(searchParams.get("limit") ?? "200", 10), 500);
 
-  const entries = dnsMonitorStore.getEntries(limit);
+  const { data, error } = await supabase
+    .from("dns_logs")
+    .select("id, device_id, domain, blocked, timestamp")
+    .order("timestamp", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   return NextResponse.json({
-    data: entries,
-    meta: {
-      total: dnsMonitorStore.getCount(),
-      returned: entries.length,
-    },
+    data: data ?? [],
+    meta: { returned: data?.length ?? 0 },
   });
 }
 
 /**
  * DELETE /api/dns-monitor
- *
- * Clears all stored DNS logs.
+ * Clears all DNS logs (authenticated users only via RLS).
  */
 export async function DELETE() {
-  dnsMonitorStore.clear();
+  const { error } = await supabase
+    .from("dns_logs")
+    .delete()
+    .neq("id", "00000000-0000-0000-0000-000000000000"); // delete all rows
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
   return NextResponse.json({ message: "Logs cleared" });
 }
