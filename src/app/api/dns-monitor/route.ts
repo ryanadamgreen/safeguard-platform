@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const [logsResult, countResult] = await Promise.all([
     supabase
       .from("dns_logs")
-      .select("id, device_id, domain, blocked, timestamp")
+      .select("id, device_id, domain, blocked, app_name, timestamp")
       .order("timestamp", { ascending: false })
       .limit(limit),
     supabase

@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { supabaseEdge as supabase } from "@/lib/supabase-edge";
+import { detectApp } from "@/lib/app-domains";
 
 /**
  * DoH endpoint — RFC 8484
@@ -142,12 +143,14 @@ async function handleDNS(token: string, dnsBytes: Uint8Array): Promise<Response>
 
   // Log after response — never adds latency to DNS replies
   if (domain) {
+    const appName = detectApp(domain);
     after(async () => {
       await Promise.all([
         supabase.from("dns_logs").insert({
           device_id: token,
           domain,
           blocked: shouldBlock,
+          app_name: appName,
           timestamp: new Date().toISOString(),
         }),
         supabase
