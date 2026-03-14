@@ -40,9 +40,11 @@ export function Sidebar() {
   return (
     <aside className="hidden md:flex h-screen w-64 flex-col border-r bg-white">
       {/* Brand */}
-      <div className="flex items-center gap-2 border-b px-5 py-4">
-        <Shield className="h-7 w-7 text-blue-600" />
-        <span className="text-lg font-semibold tracking-tight">
+      <div className="flex items-center gap-2.5 border-b px-5 py-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#3730a3] flex-shrink-0">
+          <Shield className="h-4.5 w-4.5 text-white" />
+        </div>
+        <span className="text-base font-semibold tracking-tight text-[#1f2937]">
           SafeGuard
         </span>
       </div>
@@ -76,9 +78,9 @@ export function Sidebar() {
       {/* Admin label */}
       {isAdmin && (
         <div className="border-b px-4 py-3">
-          <div className="flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2">
-            <Shield className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-700">
+          <div className="flex items-center gap-2 rounded-md bg-indigo-50 px-3 py-2">
+            <Shield className="h-4 w-4 text-[#3730a3]" />
+            <span className="text-sm font-medium text-[#3730a3]">
               Platform Admin
             </span>
           </div>
@@ -114,7 +116,7 @@ export function Sidebar() {
       <div className="border-t px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700 flex-shrink-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#dbeafe] text-sm font-semibold text-[#2563eb] flex-shrink-0">
               {profile?.full_name
                 ? profile.full_name
                     .split(" ")

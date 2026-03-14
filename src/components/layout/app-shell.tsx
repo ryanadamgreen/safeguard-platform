@@ -32,13 +32,15 @@ function MobileHeader() {
     >
       {/* Brand */}
       <div className="flex items-center gap-2">
-        <Shield className="h-6 w-6 text-blue-600" />
-        <span className="text-base font-semibold tracking-tight">SafeGuard</span>
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#3730a3]">
+          <Shield className="h-4 w-4 text-white" />
+        </div>
+        <span className="text-base font-semibold tracking-tight text-[#1f2937]">SafeGuard</span>
       </div>
 
       {/* Right side */}
       {isAdmin ? (
-        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+        <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-[#3730a3]">
           Admin
         </span>
       ) : homes.length > 0 ? (
