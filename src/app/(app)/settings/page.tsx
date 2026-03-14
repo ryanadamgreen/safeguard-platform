@@ -31,10 +31,31 @@ import {
   Trash2,
   Plus,
   Loader2,
+  CheckCircle2,
+  Download,
+  Smartphone,
 } from "lucide-react";
 import { useHome } from "@/contexts/home-context";
 import { useAuth } from "@/contexts/auth-context";
-import { getChildrenByHome } from "@/lib/queries";
+import { getChildrenByHome, createDevice } from "@/lib/queries";
+
+const BASE_URL =
+  process.env.NEXT_PUBLIC_SAFEGUARD_BASE_URL?.replace(/\/$/, "") ??
+  (typeof window !== "undefined" ? window.location.origin : "");
+
+interface NewDeviceForm {
+  name: string;
+  type: string;
+  childId: string;
+  scheduleStart: string;
+  scheduleEnd: string;
+}
+
+interface CreatedDevice {
+  id: string;
+  name: string;
+  profileUrl: string;
+}
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -42,6 +63,17 @@ export default function SettingsPage() {
   const { profile, loading: authLoading } = useAuth();
   const [children, setChildren] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [form, setForm] = useState<NewDeviceForm>({
+    name: "",
+    type: "phone",
+    childId: "",
+    scheduleStart: "",
+    scheduleEnd: "",
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [created, setCreated] = useState<CreatedDevice | null>(null);
 
   useEffect(() => {
     if (!authLoading && profile?.role !== "platform_admin") {
@@ -79,6 +111,43 @@ export default function SettingsPage() {
     );
   }
 
+  async function handleAddDevice(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.name.trim()) {
+      setFormError("Device name is required.");
+      return;
+    }
+    setFormError(null);
+    setSubmitting(true);
+    try {
+      const device = await createDevice({
+        name: form.name.trim(),
+        type: form.type,
+        home_id: selectedHome!.id,
+        child_id: form.childId || null,
+        schedule_start: form.scheduleStart || null,
+        schedule_end: form.scheduleEnd || null,
+      });
+
+      const origin =
+        BASE_URL ||
+        (typeof window !== "undefined" ? window.location.origin : "");
+
+      setCreated({
+        id: device.id,
+        name: form.name.trim(),
+        profileUrl: `${origin}/api/mobileconfig/${device.id}`,
+      });
+
+      // Reset form
+      setForm({ name: "", type: "phone", childId: "", scheduleStart: "", scheduleEnd: "" });
+    } catch (err: any) {
+      setFormError(err?.message ?? "Failed to create device.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -92,7 +161,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Home className="h-5 w-5 text-blue-600" />
+            <Home className="h-5 w-5 text-[#3730a3]" />
             Home Details
           </CardTitle>
         </CardHeader>
@@ -117,7 +186,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Router className="h-5 w-5 text-blue-600" />
+            <Router className="h-5 w-5 text-[#3730a3]" />
             Router & DNS Configuration
           </CardTitle>
         </CardHeader>
@@ -156,7 +225,7 @@ export default function SettingsPage() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
-              <UserPlus className="h-5 w-5 text-blue-600" />
+              <UserPlus className="h-5 w-5 text-[#3730a3]" />
               Children
             </CardTitle>
             <Button size="sm" className="gap-1.5">
@@ -179,7 +248,7 @@ export default function SettingsPage() {
                 <TableRow key={child.id}>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#dbeafe] text-sm font-bold text-[#2563eb]">
                         {child.initials}
                       </div>
                       <span className="font-medium">{child.initials}</span>
@@ -206,67 +275,150 @@ export default function SettingsPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Settings className="h-5 w-5 text-blue-600" />
+            <Smartphone className="h-5 w-5 text-[#3730a3]" />
             Add Device
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="device-name">Device Name</Label>
-              <Input id="device-name" placeholder="e.g. AB's iPhone" />
+        <CardContent>
+          {/* Success panel */}
+          {created && (
+            <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <p className="font-semibold text-green-900">
+                      Device &ldquo;{created.name}&rdquo; created
+                    </p>
+                    <p className="text-sm text-green-700">
+                      Install the profile on the device to start monitoring DNS queries.
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-green-200 bg-white p-3">
+                    <p className="mb-1 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      Install Profile URL
+                    </p>
+                    <p className="break-all font-mono text-sm text-gray-800">
+                      {created.profileUrl}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <a href={created.profileUrl} download>
+                      <Button size="sm" className="gap-1.5 bg-[#3730a3] hover:bg-[#312e81]">
+                        <Download className="h-4 w-4" />
+                        Download Profile
+                      </Button>
+                    </a>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setCreated(null)}
+                    >
+                      Add Another Device
+                    </Button>
+                  </div>
+                  <p className="text-xs text-green-700">
+                    <strong>iOS instructions:</strong> Open Safari on the child&apos;s phone → tap the link above → tap Allow → go to Settings → General → VPN &amp; Device Management → install the profile.
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="device-type">Device Type</Label>
-              <Select>
-                <SelectTrigger id="device-type">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="phone">Phone</SelectItem>
-                  <SelectItem value="tablet">Tablet</SelectItem>
-                  <SelectItem value="laptop">Laptop</SelectItem>
-                  <SelectItem value="desktop">Desktop</SelectItem>
-                  <SelectItem value="gaming_console">Gaming Console</SelectItem>
-                  <SelectItem value="smart_tv">Smart TV</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="mac-address">MAC Address</Label>
-              <Input id="mac-address" placeholder="AA:BB:CC:DD:EE:FF" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="assign-child">Assign to Child</Label>
-              <Select>
-                <SelectTrigger id="assign-child">
-                  <SelectValue placeholder="Select child" />
-                </SelectTrigger>
-                <SelectContent>
-                  {children.map((child: any) => (
-                    <SelectItem key={child.id} value={child.id}>
-                      {child.initials} – Age {child.age}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <Separator />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="schedule-start">Schedule Start</Label>
-              <Input id="schedule-start" type="time" placeholder="08:00" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="schedule-end">Schedule End</Label>
-              <Input id="schedule-end" type="time" placeholder="20:00" />
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button>Add Device</Button>
-          </div>
+          )}
+
+          {!created && (
+            <form onSubmit={handleAddDevice} className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="device-name">Device Name</Label>
+                  <Input
+                    id="device-name"
+                    placeholder="e.g. AB's iPhone"
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="device-type">Device Type</Label>
+                  <Select
+                    value={form.type}
+                    onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}
+                  >
+                    <SelectTrigger id="device-type">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="phone">Phone</SelectItem>
+                      <SelectItem value="tablet">Tablet</SelectItem>
+                      <SelectItem value="laptop">Laptop</SelectItem>
+                      <SelectItem value="desktop">Desktop</SelectItem>
+                      <SelectItem value="gaming_console">Gaming Console</SelectItem>
+                      <SelectItem value="smart_tv">Smart TV</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="assign-child">Assign to Child</Label>
+                  <Select
+                    value={form.childId}
+                    onValueChange={(v) => setForm((f) => ({ ...f, childId: v }))}
+                  >
+                    <SelectTrigger id="assign-child">
+                      <SelectValue placeholder="Select child (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {children.map((child: any) => (
+                        <SelectItem key={child.id} value={child.id}>
+                          {child.initials} – Age {child.age}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Separator />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="schedule-start">Internet From</Label>
+                  <Input
+                    id="schedule-start"
+                    type="time"
+                    value={form.scheduleStart}
+                    onChange={(e) => setForm((f) => ({ ...f, scheduleStart: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="schedule-end">Internet Until</Label>
+                  <Input
+                    id="schedule-end"
+                    type="time"
+                    value={form.scheduleEnd}
+                    onChange={(e) => setForm((f) => ({ ...f, scheduleEnd: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-gray-400">
+                Leave schedule blank for unrestricted access.
+              </p>
+              {formError && (
+                <p className="text-sm text-red-500">{formError}</p>
+              )}
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className="gap-1.5 bg-[#3730a3] hover:bg-[#312e81]"
+                >
+                  {submitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                  {submitting ? "Creating…" : "Add Device"}
+                </Button>
+              </div>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>

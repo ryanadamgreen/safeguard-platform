@@ -35,6 +35,31 @@ export async function getDevicesByHome(homeId: string) {
   return data;
 }
 
+export async function createDevice(device: {
+  name: string;
+  type: string;
+  home_id: string;
+  child_id: string | null;
+  schedule_start: string | null;
+  schedule_end: string | null;
+}): Promise<{ id: string }> {
+  const { data, error } = await supabase
+    .from("devices")
+    .insert({
+      name: device.name,
+      type: device.type,
+      home_id: device.home_id,
+      child_id: device.child_id || null,
+      schedule_start: device.schedule_start || null,
+      schedule_end: device.schedule_end || null,
+      internet_enabled: true,
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function toggleDeviceInternet(
   deviceId: string,
   enabled: boolean
