@@ -2,7 +2,6 @@
 
 import { AlertsBanner } from "@/components/dashboard/alerts-banner";
 import { ChildrenSection } from "@/components/dashboard/children-section";
-import { DevicesSection } from "@/components/dashboard/devices-section";
 import { UnknownDevicesSection } from "@/components/dashboard/unknown-devices-section";
 import {
   children,
@@ -30,15 +29,12 @@ export default function DashboardPage() {
 
       <AlertsBanner alerts={homeAlerts} />
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-1">
-          <ChildrenSection children={homeChildren} devices={homeDevices} />
-        </div>
-        <div className="lg:col-span-2 space-y-6">
-          <DevicesSection devices={homeDevices} children={homeChildren} />
-          <UnknownDevicesSection unknownDevices={homeUnknown} />
-        </div>
-      </div>
+      <ChildrenSection children={homeChildren} devices={homeDevices} />
+
+      <UnknownDevicesSection
+        unknownDevices={homeUnknown}
+        children={homeChildren}
+      />
     </div>
   );
 }

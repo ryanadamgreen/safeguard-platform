@@ -9,6 +9,7 @@ import {
   Settings,
   Shield,
   ChevronDown,
+  FlaskConical,
 } from "lucide-react";
 import type { Home } from "@/types";
 
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/simulate", label: "Simulate", icon: FlaskConical },
 ];
 
 export function Sidebar({ homes, selectedHome, onSelectHome }: SidebarProps) {
