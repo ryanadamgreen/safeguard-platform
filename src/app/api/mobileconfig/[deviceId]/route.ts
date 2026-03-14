@@ -11,8 +11,9 @@ import { randomUUID } from "crypto";
  * automatically tagged to this specific device:
  *   ServerURL = https://<host>/api/dns-query/<deviceId>
  *
- * ServerAddresses (Cloudflare IPs) are required for iOS to mark the profile
- * as "Connected" and actively route DNS through the DoH endpoint.
+ * No ServerAddresses — iOS bootstraps the initial connection via the
+ * router's DNS, then switches to DoH. Putting wrong IPs here (e.g. 1.1.1.1)
+ * causes iOS to try TLS to Cloudflare with our SNI, fail, and break all DNS.
  */
 export async function GET(
   _request: Request,
@@ -57,13 +58,6 @@ export async function GET(
     '\t\t\t\t<string>HTTPS</string>',
     '\t\t\t\t<key>ServerURL</key>',
     `\t\t\t\t<string>${dohServerURL}</string>`,
-    '\t\t\t\t<key>ServerAddresses</key>',
-    '\t\t\t\t<array>',
-    '\t\t\t\t\t<string>1.1.1.1</string>',
-    '\t\t\t\t\t<string>1.0.0.1</string>',
-    '\t\t\t\t\t<string>2606:4700:4700::1111</string>',
-    '\t\t\t\t\t<string>2606:4700:4700::1001</string>',
-    '\t\t\t\t</array>',
     '\t\t\t</dict>',
     '\t\t\t<key>PayloadDisplayName</key>',
     '\t\t\t<string>SafeGuard DNS</string>',
