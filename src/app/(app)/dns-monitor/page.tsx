@@ -12,8 +12,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Radar, Pause, Play, Trash2, Loader2, ShieldX, LayoutGrid, List } from "lucide-react";
+import { Radar, Pause, Play, Trash2, Loader2, ShieldX, LayoutGrid, List, HelpCircle } from "lucide-react";
 import { format } from "date-fns";
+import { rootDomain, detectService } from "@/lib/app-domains";
 
 interface DnsEntry {
   id: string;
@@ -164,6 +165,14 @@ export default function DnsMonitorPage() {
             <Trash2 className="h-3.5 w-3.5" /> Clear
           </Button>
         </div>
+      </div>
+
+      {/* Explainer */}
+      <div className="flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+        <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
+        <p>
+          Every website visit triggers DNS lookups for <strong>all resources on the page</strong> — CDNs, analytics, fonts, ads. Visiting <em>npr.org</em> may show <em>piano.io</em>, <em>fastly.net</em>, and others alongside it. The domain you typed will also appear in the list. Apps appear here once their DNS cache expires (usually within a few minutes of opening them).
+        </p>
       </div>
 
       {/* Stats */}
@@ -328,14 +337,25 @@ export default function DnsMonitorPage() {
                       </TableCell>
                       <TableCell>
                         <div className="space-y-0.5">
-                          {entry.app_name && (
+                          {entry.app_name ? (
                             <Badge className={`text-[10px] border-0 px-1.5 py-0 ${appColour(entry.app_name)}`}>
                               {entry.app_name}
                             </Badge>
-                          )}
+                          ) : (() => {
+                            const svc = detectService(entry.domain);
+                            return svc ? (
+                              <span className="text-[10px] text-gray-400 font-medium">{svc}</span>
+                            ) : null;
+                          })()}
                           <p className="font-mono text-xs text-[#1f2937] truncate max-w-[300px]" title={entry.domain}>
                             {entry.domain}
                           </p>
+                          {(() => {
+                            const root = rootDomain(entry.domain);
+                            return root !== entry.domain ? (
+                              <p className="text-[10px] text-gray-400">{root}</p>
+                            ) : null;
+                          })()}
                         </div>
                       </TableCell>
                       <TableCell>
