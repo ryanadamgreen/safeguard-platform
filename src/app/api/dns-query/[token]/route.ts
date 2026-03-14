@@ -1,5 +1,5 @@
 import { after } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseEdge as supabase } from "@/lib/supabase-edge";
 
 /**
  * DoH endpoint — RFC 8484
