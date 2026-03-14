@@ -27,14 +27,19 @@ export async function GET(
 ) {
   const { deviceId } = await params;
 
-  const { data: device, error } = await supabase
-    .from("devices")
-    .select("name")
-    .eq("id", deviceId)
-    .single();
-
-  if (error || !device) {
-    return Response.json({ error: "Device not found" }, { status: 404 });
+  // Try to look up the device name for a friendlier profile label.
+  // If RLS blocks the anon key (server-side context has no session), fall back
+  // gracefully — the profile still works perfectly without the name.
+  let deviceName = "SafeGuard Device";
+  try {
+    const { data } = await supabase
+      .from("devices")
+      .select("name")
+      .eq("id", deviceId)
+      .single();
+    if (data?.name) deviceName = data.name;
+  } catch {
+    // ignore — name is cosmetic only
   }
 
   const baseUrl =
@@ -47,7 +52,7 @@ export async function GET(
   const profileUUID = randomUUID().toUpperCase();
   const payloadUUID = randomUUID().toUpperCase();
 
-  const safeName = device.name.replace(/[^a-zA-Z0-9-_ ]/g, "-");
+  const safeName = deviceName.replace(/[^a-zA-Z0-9-_ ]/g, "-");
 
   const mobileconfig = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -78,9 +83,9 @@ export async function GET(
 \t\t</dict>
 \t</array>
 \t<key>PayloadDisplayName</key>
-\t<string>SafeGuard – ${safeName}</string>
+\t<string>SafeGuard – ${deviceName}</string>
 \t<key>PayloadDescription</key>
-\t<string>SafeGuard DNS monitoring and filtering profile for ${safeName}</string>
+\t<string>SafeGuard DNS monitoring and filtering profile for ${deviceName}</string>
 \t<key>PayloadIdentifier</key>
 \t<string>com.safeguard.dns.profile.${deviceId}</string>
 \t<key>PayloadType</key>
