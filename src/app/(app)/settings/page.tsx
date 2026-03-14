@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,19 +30,61 @@ import {
   UserPlus,
   Trash2,
   Plus,
+  Loader2,
 } from "lucide-react";
-import { homes, children } from "@/lib/mock-data";
+import { useHome } from "@/contexts/home-context";
+import { useAuth } from "@/contexts/auth-context";
+import { getChildrenByHome } from "@/lib/queries";
 
 export default function SettingsPage() {
-  const home = homes[0];
-  const homeChildren = children.filter((c) => c.home_id === home.id);
+  const router = useRouter();
+  const { selectedHome, loading: homeLoading } = useHome();
+  const { profile, loading: authLoading } = useAuth();
+  const [children, setChildren] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && profile?.role !== "platform_admin") {
+      router.replace("/dashboard");
+      return;
+    }
+    if (authLoading || homeLoading || !selectedHome) return;
+
+    async function load() {
+      setLoading(true);
+      try {
+        const c = await getChildrenByHome(selectedHome!.id);
+        setChildren(c);
+      } catch (err) {
+        console.error("Failed to load settings data:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, [selectedHome, authLoading, homeLoading]);
+
+  if (authLoading || homeLoading || loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  if (!selectedHome) {
+    return (
+      <p className="py-20 text-center text-gray-400">No home selected.</p>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         <p className="text-sm text-gray-500">
-          Manage home configuration
+          Manage configuration for {selectedHome.name}
         </p>
       </div>
 
@@ -56,11 +100,11 @@ export default function SettingsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="home-name">Home Name</Label>
-              <Input id="home-name" defaultValue={home.name} />
+              <Input id="home-name" defaultValue={selectedHome.name} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="home-address">Address</Label>
-              <Input id="home-address" defaultValue={home.address} />
+              <Input id="home-address" defaultValue={selectedHome.address} />
             </div>
           </div>
           <div className="flex justify-end">
@@ -81,13 +125,13 @@ export default function SettingsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="router-id">Router ID</Label>
-              <Input id="router-id" defaultValue={home.router_id} />
+              <Input id="router-id" defaultValue={selectedHome.router_id} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="nextdns-id">NextDNS Profile ID</Label>
               <Input
                 id="nextdns-id"
-                defaultValue={home.nextdns_profile_id}
+                defaultValue={selectedHome.nextdns_profile_id}
               />
             </div>
           </div>
@@ -131,7 +175,7 @@ export default function SettingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {homeChildren.map((child) => (
+              {children.map((child: any) => (
                 <TableRow key={child.id}>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -191,10 +235,7 @@ export default function SettingsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="mac-address">MAC Address</Label>
-              <Input
-                id="mac-address"
-                placeholder="AA:BB:CC:DD:EE:FF"
-              />
+              <Input id="mac-address" placeholder="AA:BB:CC:DD:EE:FF" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="assign-child">Assign to Child</Label>
@@ -203,7 +244,7 @@ export default function SettingsPage() {
                   <SelectValue placeholder="Select child" />
                 </SelectTrigger>
                 <SelectContent>
-                  {homeChildren.map((child) => (
+                  {children.map((child: any) => (
                     <SelectItem key={child.id} value={child.id}>
                       {child.initials} – Age {child.age}
                     </SelectItem>
@@ -216,19 +257,11 @@ export default function SettingsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="schedule-start">Schedule Start</Label>
-              <Input
-                id="schedule-start"
-                type="time"
-                placeholder="08:00"
-              />
+              <Input id="schedule-start" type="time" placeholder="08:00" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="schedule-end">Schedule End</Label>
-              <Input
-                id="schedule-end"
-                type="time"
-                placeholder="20:00"
-              />
+              <Input id="schedule-end" type="time" placeholder="20:00" />
             </div>
           </div>
           <div className="flex justify-end">

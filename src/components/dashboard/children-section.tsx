@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { toggleDeviceInternet, updateDeviceSchedule } from "@/lib/queries";
 import {
   Users,
   Smartphone,
@@ -22,6 +23,7 @@ import {
   WifiOff,
   Clock,
   CalendarClock,
+  Download,
 } from "lucide-react";
 import { DEVICE_TYPE_LABELS } from "@/types";
 import type { Child, Device } from "@/types";
@@ -62,8 +64,16 @@ export function ChildrenSection({ children, devices }: ChildrenSectionProps) {
     setExpanded((prev) => ({ ...prev, [childId]: !prev[childId] }));
   };
 
-  const toggleDevice = (deviceId: string) => {
-    setDeviceStates((prev) => ({ ...prev, [deviceId]: !prev[deviceId] }));
+  const toggleDevice = async (deviceId: string) => {
+    const newState = !deviceStates[deviceId];
+    setDeviceStates((prev) => ({ ...prev, [deviceId]: newState }));
+    try {
+      await toggleDeviceInternet(deviceId, newState);
+    } catch (err) {
+      // Revert on error
+      console.error("Failed to toggle device:", err);
+      setDeviceStates((prev) => ({ ...prev, [deviceId]: !newState }));
+    }
   };
 
   const openScheduleModal = (device: Device) => {
@@ -76,16 +86,20 @@ export function ChildrenSection({ children, devices }: ChildrenSectionProps) {
     });
   };
 
-  const saveSchedule = () => {
+  const saveSchedule = async () => {
     if (!scheduleModal) return;
+    const start = scheduleModal.start || null;
+    const end = scheduleModal.end || null;
     setSchedules((prev) => ({
       ...prev,
-      [scheduleModal.deviceId]: {
-        start: scheduleModal.start || null,
-        end: scheduleModal.end || null,
-      },
+      [scheduleModal.deviceId]: { start, end },
     }));
     setScheduleModal(null);
+    try {
+      await updateDeviceSchedule(scheduleModal.deviceId, start, end);
+    } catch (err) {
+      console.error("Failed to update schedule:", err);
+    }
   };
 
   const getScheduleLabel = (deviceId: string) => {
@@ -192,16 +206,27 @@ export function ChildrenSection({ children, devices }: ChildrenSectionProps) {
                                 </div>
                               </div>
 
-                              {/* Device bottom row — schedule + last seen */}
+                              {/* Device bottom row — schedule + last seen + profile */}
                               <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                                <button
-                                  onClick={() => openScheduleModal(device)}
-                                  className="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-gray-200 transition-colors"
-                                >
-                                  <Clock className="h-3 w-3" />
-                                  {getScheduleLabel(device.id)}
-                                  <CalendarClock className="h-3 w-3 ml-1 text-blue-500" />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => openScheduleModal(device)}
+                                    className="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-gray-200 transition-colors"
+                                  >
+                                    <Clock className="h-3 w-3" />
+                                    {getScheduleLabel(device.id)}
+                                    <CalendarClock className="h-3 w-3 ml-1 text-blue-500" />
+                                  </button>
+                                  <a
+                                    href={`/api/mobileconfig/${device.id}`}
+                                    download
+                                    title="Download config profile for this device"
+                                    className="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-gray-200 transition-colors text-blue-600"
+                                  >
+                                    <Download className="h-3 w-3" />
+                                    Install Profile
+                                  </a>
+                                </div>
                                 <span>
                                   {device.last_connected
                                     ? `Last seen ${format(

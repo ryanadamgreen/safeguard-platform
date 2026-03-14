@@ -28,6 +28,10 @@ import {
 import { DEVICE_TYPE_LABELS } from "@/types";
 import type { UnknownDevice, Child, DeviceType } from "@/types";
 import { format } from "date-fns";
+import {
+  approveUnknownDevice,
+  blockUnknownDevicePermanently,
+} from "@/lib/queries";
 
 interface UnknownDevicesSectionProps {
   unknownDevices: UnknownDevice[];
@@ -58,18 +62,31 @@ export function UnknownDevicesSection({
     });
   };
 
-  const confirmApprove = () => {
+  const confirmApprove = async () => {
     if (!approveModal) return;
-    // In production: create device record, assign to child, remove from unknown
-    setVisibleDevices((prev) =>
-      prev.filter((d) => d.id !== approveModal.unknownDevice.id)
-    );
+    const ud = approveModal.unknownDevice;
+    try {
+      await approveUnknownDevice(ud.id, {
+        name: approveModal.deviceName,
+        type: approveModal.deviceType,
+        mac_address: ud.mac_address,
+        child_id: approveModal.childId,
+        home_id: ud.home_id,
+      });
+      setVisibleDevices((prev) => prev.filter((d) => d.id !== ud.id));
+    } catch (err) {
+      console.error("Failed to approve device:", err);
+    }
     setApproveModal(null);
   };
 
-  const blockPermanently = (deviceId: string) => {
-    // In production: send permanent block to router
-    setVisibleDevices((prev) => prev.filter((d) => d.id !== deviceId));
+  const blockPermanently = async (deviceId: string) => {
+    try {
+      await blockUnknownDevicePermanently(deviceId);
+      setVisibleDevices((prev) => prev.filter((d) => d.id !== deviceId));
+    } catch (err) {
+      console.error("Failed to block device:", err);
+    }
   };
 
   return (

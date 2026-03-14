@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ import {
   Radio,
   Terminal,
 } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 
 interface LogEntry {
   time: string;
@@ -33,10 +35,18 @@ interface LogEntry {
 }
 
 export default function SimulatePage() {
+  const routerSim = useRouter();
+  const { profile, loading: authLoading } = useAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
   const [streamActive, setStreamActive] = useState(false);
   const [streamSource, setStreamSource] = useState<EventSource | null>(null);
+
+  useEffect(() => {
+    if (!authLoading && profile?.role !== "platform_admin") {
+      routerSim.replace("/dashboard");
+    }
+  }, [authLoading, profile, routerSim]);
 
   // Form state
   const [alertCategory, setAlertCategory] = useState("gambling");

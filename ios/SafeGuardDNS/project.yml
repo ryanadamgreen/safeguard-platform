@@ -1,0 +1,35 @@
+name: SafeGuardDNS
+options:
+  bundleIdPrefix: com.safeguard
+  deploymentTarget:
+    iOS: "16.0"
+  xcodeVersion: "16.2"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+
+schemes:
+  SafeGuardDNS:
+    build:
+      targets:
+        SafeGuardDNS: all
+    run:
+      config: Debug
+      executable: SafeGuardDNS
+
+targets:
+  SafeGuardDNS:
+    type: application
+    platform: iOS
+    sources:
+      - SafeGuardDNS
+    info:
+      path: SafeGuardDNS/Info.plist
+    entitlements:
+      path: SafeGuardDNS/SafeGuardDNS.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.safeguard.dns
+        INFOPLIST_FILE: SafeGuardDNS/Info.plist
+        CODE_SIGN_ENTITLEMENTS: SafeGuardDNS/SafeGuardDNS.entitlements

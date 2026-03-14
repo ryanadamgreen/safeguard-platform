@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,8 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, Download, Filter } from "lucide-react";
-import { reports, children } from "@/lib/mock-data";
+import { FileText, Download, Filter, Loader2 } from "lucide-react";
+import { useHome } from "@/contexts/home-context";
+import { useAuth } from "@/contexts/auth-context";
+import { getReportsByHome, getChildrenByHome } from "@/lib/queries";
 import {
   SAFEGUARDING_CATEGORY_LABELS,
   type SafeguardingCategory,
@@ -36,22 +38,49 @@ const categoryOptions: { value: string; label: string }[] = [
 ];
 
 export default function ReportsPage() {
-  const homeId = "home-1";
+  const { selectedHome, loading: homeLoading } = useHome();
+  const { loading: authLoading } = useAuth();
+  const [reports, setReports] = useState<any[]>([]);
+  const [children, setChildren] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterChild, setFilterChild] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
 
-  const homeChildren = children.filter((c) => c.home_id === homeId);
-  const homeReports = reports.filter((r) => r.home_id === homeId);
+  useEffect(() => {
+    if (authLoading || homeLoading || !selectedHome) return;
 
-  const filteredReports = homeReports.filter((r) => {
+    async function load() {
+      setLoading(true);
+      try {
+        const [r, c] = await Promise.all([
+          getReportsByHome(selectedHome!.id),
+          getChildrenByHome(selectedHome!.id),
+        ]);
+        setReports(r);
+        setChildren(c);
+      } catch (err) {
+        console.error("Failed to load reports:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, [selectedHome, authLoading, homeLoading]);
+
+  if (authLoading || homeLoading || loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  const filteredReports = reports.filter((r: any) => {
     if (filterChild !== "all" && r.child_id !== filterChild) return false;
     if (filterCategory !== "all" && r.category !== filterCategory) return false;
     return true;
   });
-
-  const sortedReports = [...filteredReports].sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  );
 
   const getCategoryColor = (category: SafeguardingCategory) => {
     const colors: Record<SafeguardingCategory, string> = {
@@ -71,7 +100,7 @@ export default function ReportsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Reports</h1>
           <p className="text-sm text-gray-500">
-            Safeguarding events for Meadow House
+            Safeguarding events for {selectedHome?.name}
           </p>
         </div>
         <Button className="gap-2">
@@ -84,13 +113,16 @@ export default function ReportsPage() {
       <Card>
         <CardContent className="flex items-center gap-4 py-4">
           <Filter className="h-4 w-4 text-gray-400" />
-          <Select value={filterChild} onValueChange={(v) => setFilterChild(v ?? "all")}>
+          <Select
+            value={filterChild}
+            onValueChange={(v) => setFilterChild(v ?? "all")}
+          >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Children" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Children</SelectItem>
-              {homeChildren.map((child) => (
+              {children.map((child: any) => (
                 <SelectItem key={child.id} value={child.id}>
                   {child.initials}
                 </SelectItem>
@@ -98,7 +130,10 @@ export default function ReportsPage() {
             </SelectContent>
           </Select>
 
-          <Select value={filterCategory} onValueChange={(v) => setFilterCategory(v ?? "all")}>
+          <Select
+            value={filterCategory}
+            onValueChange={(v) => setFilterCategory(v ?? "all")}
+          >
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
@@ -133,7 +168,7 @@ export default function ReportsPage() {
             <FileText className="h-5 w-5 text-blue-600" />
             Safeguarding Events
             <Badge variant="secondary" className="ml-1">
-              {sortedReports.length}
+              {filteredReports.length}
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -150,7 +185,7 @@ export default function ReportsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedReports.map((report) => (
+              {filteredReports.map((report: any) => (
                 <TableRow key={report.id}>
                   <TableCell>
                     <span className="font-semibold">
@@ -164,7 +199,7 @@ export default function ReportsPage() {
                     <Badge
                       className={`text-xs ${getCategoryColor(report.category)}`}
                     >
-                      {SAFEGUARDING_CATEGORY_LABELS[report.category]}
+                      {SAFEGUARDING_CATEGORY_LABELS[report.category as SafeguardingCategory]}
                     </Badge>
                   </TableCell>
                   <TableCell className="font-mono text-sm text-gray-500">
@@ -190,9 +225,12 @@ export default function ReportsPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {sortedReports.length === 0 && (
+              {filteredReports.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-gray-400">
+                  <TableCell
+                    colSpan={6}
+                    className="py-8 text-center text-gray-400"
+                  >
                     No reports match the current filters.
                   </TableCell>
                 </TableRow>
