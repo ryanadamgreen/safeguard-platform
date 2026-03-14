@@ -3,16 +3,28 @@ import { supabase } from "@/lib/supabase";
 
 /**
  * DoH endpoint — RFC 8484
+ * Runs on Edge Runtime to eliminate cold starts (~0ms vs 2-5s for Node.js).
+ * Cold starts caused iOS to time out on the DoH validation probe, showing
+ * "Unknown" status and falling back to the ServerAddresses DNS (1.1.1.1).
  *
  * GET  /api/dns-query/<token>?dns=<base64url-encoded-dns-message>
  * POST /api/dns-query/<token>    body: raw DNS wire format
- *
- * Critical path: parse → check device status → forward to Cloudflare → respond.
- * Logging and last_connected update run AFTER the response is sent via
- * next/server `after()` so they never add latency to the DNS reply.
  */
 
+export const runtime = "edge";
+
 const UPSTREAM_DOH = "https://cloudflare-dns.com/dns-query";
+
+// ── Base64url decode (no Buffer — Edge compatible) ────────────────────────────
+
+function base64urlDecode(str: string): Uint8Array {
+  const padded = str + "=".repeat((4 - (str.length % 4)) % 4);
+  const base64 = padded.replace(/-/g, "+").replace(/_/g, "/");
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
 
 // ── DNS wire-format parser ────────────────────────────────────────────────────
 
@@ -61,19 +73,13 @@ function buildNXDOMAIN(question: Uint8Array): Uint8Array {
   response[0] = question[0]; response[1] = question[1];
   response[2] = 0x81; response[3] = 0x83;
   response[4] = 0x00; response[5] = 0x01;
-  response[6] = 0x00; response[7] = 0x00;
-  response[8] = 0x00; response[9] = 0x00;
-  response[10] = 0x00; response[11] = 0x00;
   response.set(questionSection, 12);
   return response;
 }
 
 // ── Schedule check ────────────────────────────────────────────────────────────
 
-function isWithinSchedule(
-  schedStart: string | null,
-  schedEnd: string | null
-): boolean {
+function isWithinSchedule(schedStart: string | null, schedEnd: string | null): boolean {
   if (!schedStart || !schedEnd) return true;
   const now = new Date();
   const nowM = now.getHours() * 60 + now.getMinutes();
@@ -108,7 +114,6 @@ async function getDeviceStatus(deviceId: string): Promise<DeviceStatus | null> {
 async function handleDNS(token: string, dnsBytes: Uint8Array): Promise<Response> {
   const domain = parseDNSQuestion(dnsBytes);
 
-  // Check device status (needed to decide block/allow before responding)
   const status = await getDeviceStatus(token);
 
   let shouldBlock = false;
@@ -120,7 +125,6 @@ async function handleDNS(token: string, dnsBytes: Uint8Array): Promise<Response>
     }
   }
 
-  // Build the DNS response
   let responseBytes: ArrayBuffer;
   if (shouldBlock) {
     responseBytes = buildNXDOMAIN(dnsBytes).buffer.slice(0) as ArrayBuffer;
@@ -136,7 +140,7 @@ async function handleDNS(token: string, dnsBytes: Uint8Array): Promise<Response>
     responseBytes = await upstream.arrayBuffer();
   }
 
-  // Log and update last_connected AFTER the response — never blocks DNS latency
+  // Log after response — never adds latency to DNS replies
   if (domain) {
     after(async () => {
       await Promise.all([
@@ -173,8 +177,7 @@ export async function GET(
   if (!dnsParam) return new Response("Missing dns parameter", { status: 400 });
 
   try {
-    const dnsBytes = new Uint8Array(Buffer.from(dnsParam, "base64url"));
-    return await handleDNS(token, dnsBytes);
+    return await handleDNS(token, base64urlDecode(dnsParam));
   } catch {
     return new Response(null, { status: 502 });
   }
@@ -185,7 +188,6 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
-
   try {
     const dnsBytes = new Uint8Array(await request.arrayBuffer());
     return await handleDNS(token, dnsBytes);
