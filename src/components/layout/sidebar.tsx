@@ -38,7 +38,7 @@ export function Sidebar() {
   const navItems = isAdmin ? adminNavItems : managerNavItems;
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r bg-white">
+    <aside className="hidden md:flex h-screen w-64 flex-col border-r bg-white">
       {/* Brand */}
       <div className="flex items-center gap-2 border-b px-5 py-4">
         <Shield className="h-7 w-7 text-blue-600" />

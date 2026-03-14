@@ -96,14 +96,15 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Page header */}
+      <div className="flex items-center justify-between md:flex-row flex-col md:items-center items-start gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Reports</h1>
           <p className="text-sm text-gray-500">
             Safeguarding events for {selectedHome?.name}
           </p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2 md:w-auto w-full">
           <Download className="h-4 w-4" />
           Download PDF
         </Button>
@@ -111,58 +112,115 @@ export default function ReportsPage() {
 
       {/* Filters */}
       <Card>
-        <CardContent className="flex items-center gap-4 py-4">
-          <Filter className="h-4 w-4 text-gray-400" />
-          <Select
-            value={filterChild}
-            onValueChange={(v) => setFilterChild(v ?? "all")}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Children" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Children</SelectItem>
-              {children.map((child: any) => (
-                <SelectItem key={child.id} value={child.id}>
-                  {child.initials}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={filterCategory}
-            onValueChange={(v) => setFilterCategory(v ?? "all")}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              {categoryOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {(filterChild !== "all" || filterCategory !== "all") && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setFilterChild("all");
-                setFilterCategory("all");
-              }}
+        <CardContent className="py-4">
+          {/* Desktop: single row */}
+          <div className="hidden md:flex items-center gap-4">
+            <Filter className="h-4 w-4 text-gray-400 flex-shrink-0" />
+            <Select
+              value={filterChild}
+              onValueChange={(v) => setFilterChild(v ?? "all")}
             >
-              Clear filters
-            </Button>
-          )}
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="All Children" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Children</SelectItem>
+                {children.map((child: any) => (
+                  <SelectItem key={child.id} value={child.id}>
+                    {child.initials}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={filterCategory}
+              onValueChange={(v) => setFilterCategory(v ?? "all")}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                {categoryOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {(filterChild !== "all" || filterCategory !== "all") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setFilterChild("all");
+                  setFilterCategory("all");
+                }}
+              >
+                Clear filters
+              </Button>
+            )}
+          </div>
+
+          {/* Mobile: stacked */}
+          <div className="flex md:hidden flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              <span className="text-sm font-medium text-gray-600">Filters</span>
+            </div>
+            <Select
+              value={filterChild}
+              onValueChange={(v) => setFilterChild(v ?? "all")}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="All Children" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Children</SelectItem>
+                {children.map((child: any) => (
+                  <SelectItem key={child.id} value={child.id}>
+                    {child.initials}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={filterCategory}
+              onValueChange={(v) => setFilterCategory(v ?? "all")}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                {categoryOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {(filterChild !== "all" || filterCategory !== "all") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="self-start"
+                onClick={() => {
+                  setFilterChild("all");
+                  setFilterCategory("all");
+                }}
+              >
+                Clear filters
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Reports table */}
-      <Card>
+      {/* Reports — Desktop table */}
+      <Card className="hidden md:block">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <FileText className="h-5 w-5 text-blue-600" />
@@ -239,6 +297,71 @@ export default function ReportsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Reports — Mobile card list */}
+      <div className="md:hidden space-y-2">
+        <div className="flex items-center gap-2 px-1">
+          <FileText className="h-5 w-5 text-blue-600" />
+          <span className="text-sm font-semibold text-gray-700">
+            Safeguarding Events
+          </span>
+          <Badge variant="secondary" className="ml-1">
+            {filteredReports.length}
+          </Badge>
+        </div>
+
+        {filteredReports.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center text-sm text-gray-400">
+              No reports match the current filters.
+            </CardContent>
+          </Card>
+        ) : (
+          filteredReports.map((report: any) => (
+            <Card key={report.id} className="overflow-hidden">
+              <CardContent className="px-4 py-3 space-y-1.5">
+                {/* Row 1: initials + category + action + time */}
+                <div className="flex items-center gap-2">
+                  {/* Child initials circle */}
+                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                    {report.child_initials}
+                  </div>
+
+                  {/* Category badge */}
+                  <Badge
+                    className={`text-[10px] px-1.5 ${getCategoryColor(report.category)}`}
+                  >
+                    {SAFEGUARDING_CATEGORY_LABELS[report.category as SafeguardingCategory]}
+                  </Badge>
+
+                  {/* Action badge */}
+                  <Badge
+                    variant={
+                      report.action === "blocked" ? "destructive" : "secondary"
+                    }
+                    className="text-[10px] px-1.5"
+                  >
+                    {report.action === "blocked" ? "Blocked" : "Allowed"}
+                  </Badge>
+
+                  {/* Time — push to right */}
+                  <span className="ml-auto text-[10px] text-gray-400 flex-shrink-0">
+                    {format(new Date(report.timestamp), "dd MMM HH:mm")}
+                  </span>
+                </div>
+
+                {/* Row 2: device name */}
+                <p className="text-xs text-gray-500">{report.device_name}</p>
+
+                {/* Row 3: domain */}
+                <p className="truncate font-mono text-[11px] text-gray-400">
+                  {report.domain}
+                </p>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 }

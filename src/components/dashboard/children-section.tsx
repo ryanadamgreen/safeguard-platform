@@ -176,13 +176,13 @@ export function ChildrenSection({ children, devices }: ChildrenSectionProps) {
                               {/* Device top row */}
                               <div className="flex items-center justify-between">
                                 <div className="min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <p className="text-sm font-medium truncate">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <p className="text-sm font-medium truncate min-w-0">
                                       {device.name}
                                     </p>
                                     <Badge
                                       variant="secondary"
-                                      className="text-[10px] px-1.5"
+                                      className="text-[10px] px-1.5 flex-shrink-0"
                                     >
                                       {DEVICE_TYPE_LABELS[device.type]}
                                     </Badge>
@@ -208,7 +208,7 @@ export function ChildrenSection({ children, devices }: ChildrenSectionProps) {
 
                               {/* Device bottom row — schedule + last seen + profile */}
                               <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                   <button
                                     onClick={() => openScheduleModal(device)}
                                     className="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-gray-200 transition-colors"
