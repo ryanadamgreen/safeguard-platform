@@ -21,7 +21,7 @@ export interface Device {
   id: string;
   name: string;
   type: DeviceType;
-  mac_address: string;
+  mac_address: string | null;
   child_id: string | null;
   home_id: string;
   last_connected: string | null;

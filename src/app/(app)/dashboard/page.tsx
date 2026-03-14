@@ -76,7 +76,7 @@ export default function DashboardPage() {
 
       <AlertsBanner alerts={alerts} />
 
-      <ChildrenSection children={children} devices={devices} />
+      <ChildrenSection children={children} devices={devices} homeId={selectedHome.id} />
 
       <UnknownDevicesSection
         unknownDevices={unknownDevices}
