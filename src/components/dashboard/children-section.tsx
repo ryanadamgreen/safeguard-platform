@@ -41,10 +41,12 @@ import {
   CheckCircle2,
   Copy,
   Settings2,
+  QrCode,
 } from "lucide-react";
 import { DEVICE_TYPE_LABELS } from "@/types";
 import type { Child, Device } from "@/types";
 import { format } from "date-fns";
+import { QRCodeSVG } from "qrcode.react";
 
 interface ChildrenSectionProps {
   children: Child[];
@@ -352,7 +354,7 @@ export function ChildrenSection({ children, devices, homeId }: ChildrenSectionPr
                                     onClick={() => { setSetupDevice(device); setSetupTab("ios"); }}
                                     className="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-gray-200 transition-colors text-[#3730a3]"
                                   >
-                                    <Settings2 className="h-3 w-3" />
+                                    <QrCode className="h-3 w-3" />
                                     Setup
                                   </button>
                                 </div>
@@ -512,50 +514,58 @@ export function ChildrenSection({ children, devices, homeId }: ChildrenSectionPr
 
               {setupTab === "ios" ? (
                 <>
+                  <div className="flex justify-center rounded-lg border bg-white p-4">
+                    <QRCodeSVG
+                      value={`${origin}/api/mobileconfig/${addedDevice.id}`}
+                      size={180}
+                      level="M"
+                      marginSize={2}
+                    />
+                  </div>
                   <div className="rounded-md border border-blue-100 bg-blue-50 p-3 text-xs text-blue-700 space-y-1">
-                    <p className="font-semibold">iOS setup:</p>
+                    <p className="font-semibold">Scan with the child&apos;s iPhone:</p>
                     <ol className="list-decimal list-inside space-y-0.5">
-                      <li>Open <strong>Safari</strong> on the child&apos;s device</li>
-                      <li>Go to the profile URL below and tap <strong>Allow</strong></li>
+                      <li>Open the <strong>Camera</strong> app and scan the QR code above</li>
+                      <li>Tap the notification banner to open in Safari</li>
+                      <li>Tap <strong>Allow</strong> to download the profile</li>
                       <li>Go to <strong>Settings → General → VPN &amp; Device Management</strong></li>
                       <li>Tap the SafeGuard profile and tap <strong>Install</strong></li>
                     </ol>
                   </div>
-                  <div className="flex gap-2">
-                    <a href={`${origin}/api/mobileconfig/${addedDevice.id}`} download className="flex-1">
-                      <Button className="w-full gap-1.5 bg-[#3730a3] hover:bg-[#312e81]">
-                        <Download className="h-4 w-4" />
-                        Download Profile
-                      </Button>
-                    </a>
-                    <Button variant="outline" onClick={closeAddDevice}>Done</Button>
-                  </div>
+                  <Button variant="outline" className="w-full" onClick={closeAddDevice}>Done</Button>
                 </>
               ) : (
                 <>
+                  <div className="flex justify-center rounded-lg border bg-white p-4">
+                    <QRCodeSVG
+                      value={dohUrl(addedDevice.id)}
+                      size={180}
+                      level="M"
+                      marginSize={2}
+                    />
+                  </div>
                   <div className="rounded-md border border-green-100 bg-green-50 p-3 text-xs text-green-700 space-y-1">
-                    <p className="font-semibold">Android setup:</p>
+                    <p className="font-semibold">Setup on the child&apos;s Android phone:</p>
                     <ol className="list-decimal list-inside space-y-0.5">
-                      <li>Install <strong>Intra</strong> from the Google Play Store on the child&apos;s device</li>
-                      <li>Open Intra → tap <strong>Choose server</strong> → <strong>Custom server URL</strong></li>
-                      <li>Paste the DoH URL below and tap <strong>OK</strong></li>
+                      <li>Install <strong>Intra</strong> from the Google Play Store</li>
+                      <li>Open Intra → <strong>Choose server</strong> → <strong>Custom server URL</strong></li>
+                      <li>Scan the QR code above to copy the URL, then paste it</li>
                       <li>Toggle Intra <strong>on</strong></li>
                     </ol>
                   </div>
                   <div className="rounded-md border bg-gray-50 p-3">
                     <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">DoH Server URL</p>
-                    <p className="break-all font-mono text-sm text-gray-700">{dohUrl(addedDevice.id)}</p>
+                    <p className="break-all font-mono text-xs text-gray-500">{dohUrl(addedDevice.id)}</p>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      className="flex-1 gap-1.5 bg-[#3730a3] hover:bg-[#312e81]"
-                      onClick={() => copyToClipboard(dohUrl(addedDevice.id))}
-                    >
-                      <Copy className="h-4 w-4" />
-                      {copied ? "Copied!" : "Copy URL"}
-                    </Button>
-                    <Button variant="outline" onClick={closeAddDevice}>Done</Button>
-                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full gap-1.5"
+                    onClick={() => copyToClipboard(dohUrl(addedDevice.id))}
+                  >
+                    <Copy className="h-4 w-4" />
+                    {copied ? "Copied!" : "Copy URL"}
+                  </Button>
+                  <Button variant="outline" className="w-full" onClick={closeAddDevice}>Done</Button>
                 </>
               )}
             </div>
@@ -672,43 +682,47 @@ export function ChildrenSection({ children, devices, homeId }: ChildrenSectionPr
 
               {setupTab === "ios" ? (
                 <>
+                  <div className="flex justify-center rounded-lg border bg-white p-4">
+                    <QRCodeSVG
+                      value={`${origin}/api/mobileconfig/${setupDevice.id}`}
+                      size={180}
+                      level="M"
+                      marginSize={2}
+                    />
+                  </div>
                   <div className="rounded-md border border-blue-100 bg-blue-50 p-3 text-xs text-blue-700 space-y-1">
-                    <p className="font-semibold">iOS setup:</p>
+                    <p className="font-semibold">Scan with the child&apos;s iPhone:</p>
                     <ol className="list-decimal list-inside space-y-0.5">
-                      <li>Open <strong>Safari</strong> on the child&apos;s device</li>
-                      <li>Go to the profile URL below and tap <strong>Allow</strong></li>
+                      <li>Open the <strong>Camera</strong> app and scan the QR code above</li>
+                      <li>Tap the notification banner to open in Safari</li>
+                      <li>Tap <strong>Allow</strong> to download the profile</li>
                       <li>Go to <strong>Settings → General → VPN &amp; Device Management</strong></li>
                       <li>Tap the SafeGuard profile and tap <strong>Install</strong></li>
                     </ol>
                   </div>
-                  <div className="rounded-md border bg-gray-50 p-3">
-                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">Profile URL</p>
-                    <p className="break-all font-mono text-sm text-gray-700">{origin}/api/mobileconfig/{setupDevice.id}</p>
-                  </div>
-                  <a href={`${origin}/api/mobileconfig/${setupDevice.id}`} download>
-                    <Button className="w-full gap-1.5 bg-[#3730a3] hover:bg-[#312e81]">
-                      <Download className="h-4 w-4" />
-                      Download Profile
-                    </Button>
-                  </a>
                 </>
               ) : (
                 <>
+                  <div className="flex justify-center rounded-lg border bg-white p-4">
+                    <QRCodeSVG
+                      value={dohUrl(setupDevice.id)}
+                      size={180}
+                      level="M"
+                      marginSize={2}
+                    />
+                  </div>
                   <div className="rounded-md border border-green-100 bg-green-50 p-3 text-xs text-green-700 space-y-1">
-                    <p className="font-semibold">Android setup:</p>
+                    <p className="font-semibold">Setup on the child&apos;s Android phone:</p>
                     <ol className="list-decimal list-inside space-y-0.5">
-                      <li>Install <strong>Intra</strong> from the Google Play Store on the child&apos;s device</li>
-                      <li>Open Intra → tap <strong>Choose server</strong> → <strong>Custom server URL</strong></li>
-                      <li>Paste the DoH URL below and tap <strong>OK</strong></li>
+                      <li>Install <strong>Intra</strong> from the Google Play Store</li>
+                      <li>Open Intra → <strong>Choose server</strong> → <strong>Custom server URL</strong></li>
+                      <li>Scan the QR code above to copy the URL, then paste it</li>
                       <li>Toggle Intra <strong>on</strong></li>
                     </ol>
                   </div>
-                  <div className="rounded-md border bg-gray-50 p-3">
-                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">DoH Server URL</p>
-                    <p className="break-all font-mono text-sm text-gray-700">{dohUrl(setupDevice.id)}</p>
-                  </div>
                   <Button
-                    className="w-full gap-1.5 bg-[#3730a3] hover:bg-[#312e81]"
+                    variant="outline"
+                    className="w-full gap-1.5"
                     onClick={() => copyToClipboard(dohUrl(setupDevice.id))}
                   >
                     <Copy className="h-4 w-4" />
