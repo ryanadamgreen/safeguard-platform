@@ -544,7 +544,7 @@ export function ChildrenSection({ children, devices, homeId }: ChildrenSectionPr
                       marginSize={2}
                     />
                   </div>
-                  <div className="rounded-md border border-green-100 bg-green-50 p-3 text-xs text-green-700 space-y-1">
+                  <div className="rounded-md border border-green-100 bg-green-50 p-3 text-xs text-green-700 space-y-2">
                     <p className="font-semibold">Setup on the child&apos;s Android phone:</p>
                     <ol className="list-decimal list-inside space-y-0.5">
                       <li>Install <strong>Intra</strong> from the Google Play Store</li>
@@ -552,6 +552,18 @@ export function ChildrenSection({ children, devices, homeId }: ChildrenSectionPr
                       <li>Scan the QR code above to copy the URL, then paste it</li>
                       <li>Toggle Intra <strong>on</strong></li>
                     </ol>
+                    <div className="border-t border-green-200 pt-2 mt-2">
+                      <p className="font-semibold text-green-800">Lock it down (prevents removal):</p>
+                      <ol className="list-decimal list-inside space-y-0.5" start={5}>
+                        <li>Go to <strong>Settings → Network &amp; Internet → VPN</strong></li>
+                        <li>Tap the <strong>gear icon</strong> next to Intra</li>
+                        <li>Enable <strong>Always-on VPN</strong></li>
+                        <li>Enable <strong>Block connections without VPN</strong></li>
+                      </ol>
+                      <p className="mt-1 text-[10px] text-green-600">
+                        This prevents the child from disabling or uninstalling Intra. All internet is blocked if Intra stops. Changing these settings requires the device passcode.
+                      </p>
+                    </div>
                   </div>
                   <div className="rounded-md border bg-gray-50 p-3">
                     <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">DoH Server URL</p>
@@ -711,7 +723,7 @@ export function ChildrenSection({ children, devices, homeId }: ChildrenSectionPr
                       marginSize={2}
                     />
                   </div>
-                  <div className="rounded-md border border-green-100 bg-green-50 p-3 text-xs text-green-700 space-y-1">
+                  <div className="rounded-md border border-green-100 bg-green-50 p-3 text-xs text-green-700 space-y-2">
                     <p className="font-semibold">Setup on the child&apos;s Android phone:</p>
                     <ol className="list-decimal list-inside space-y-0.5">
                       <li>Install <strong>Intra</strong> from the Google Play Store</li>
@@ -719,6 +731,18 @@ export function ChildrenSection({ children, devices, homeId }: ChildrenSectionPr
                       <li>Scan the QR code above to copy the URL, then paste it</li>
                       <li>Toggle Intra <strong>on</strong></li>
                     </ol>
+                    <div className="border-t border-green-200 pt-2 mt-2">
+                      <p className="font-semibold text-green-800">Lock it down (prevents removal):</p>
+                      <ol className="list-decimal list-inside space-y-0.5" start={5}>
+                        <li>Go to <strong>Settings → Network &amp; Internet → VPN</strong></li>
+                        <li>Tap the <strong>gear icon</strong> next to Intra</li>
+                        <li>Enable <strong>Always-on VPN</strong></li>
+                        <li>Enable <strong>Block connections without VPN</strong></li>
+                      </ol>
+                      <p className="mt-1 text-[10px] text-green-600">
+                        This prevents the child from disabling or uninstalling Intra. All internet is blocked if Intra stops. Changing these settings requires the device passcode.
+                      </p>
+                    </div>
                   </div>
                   <Button
                     variant="outline"
