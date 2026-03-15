@@ -38,21 +38,21 @@ export function Sidebar() {
   const navItems = isAdmin ? adminNavItems : managerNavItems;
 
   return (
-    <aside className="hidden md:flex h-screen w-64 flex-col border-r bg-white">
+    <aside className="hidden md:flex h-screen w-64 flex-col bg-white">
       {/* Brand */}
-      <div className="flex items-center gap-2.5 border-b px-5 py-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#3730a3] flex-shrink-0">
-          <Shield className="h-4.5 w-4.5 text-white" />
+      <div className="flex items-center gap-2.5 px-5 py-5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#3730a3] flex-shrink-0">
+          <Shield className="h-5 w-5 text-white" />
         </div>
-        <span className="text-base font-semibold tracking-tight text-[#1f2937]">
+        <span className="text-lg font-semibold tracking-tight text-[#1f2937]">
           SafeGuard
         </span>
       </div>
 
       {/* Home selector — managers only */}
       {!isAdmin && homes.length > 0 && (
-        <div className="border-b px-4 py-3">
-          <label className="mb-1 block text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <div className="px-4 pb-4">
+          <label className="mb-1.5 block text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
             Home
           </label>
           <div className="relative">
@@ -62,7 +62,7 @@ export function Sidebar() {
                 const home = homes.find((h) => h.id === e.target.value);
                 if (home) setSelectedHome(home);
               }}
-              className="w-full appearance-none rounded-md border bg-gray-50 px-3 py-2 pr-8 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full appearance-none rounded-xl border border-gray-100 bg-gray-50/80 px-3 py-2.5 pr-8 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#3730a3]/20 focus:border-[#3730a3]/30 transition-shadow"
             >
               {homes.map((home) => (
                 <option key={home.id} value={home.id}>
@@ -70,15 +70,15 @@ export function Sidebar() {
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           </div>
         </div>
       )}
 
       {/* Admin label */}
       {isAdmin && (
-        <div className="border-b px-4 py-3">
-          <div className="flex items-center gap-2 rounded-md bg-indigo-50 px-3 py-2">
+        <div className="px-4 pb-4">
+          <div className="flex items-center gap-2 rounded-xl bg-[#3730a3]/5 px-3 py-2.5">
             <Shield className="h-4 w-4 text-[#3730a3]" />
             <span className="text-sm font-medium text-[#3730a3]">
               Platform Admin
@@ -88,7 +88,7 @@ export function Sidebar() {
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 px-3 py-4">
+      <nav className="flex-1 space-y-1 px-3 py-2">
         {navItems.map((item) => {
           const isActive =
             item.href === "/admin"
@@ -99,13 +99,13 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                 isActive
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  ? "bg-[#3730a3] text-white shadow-sm"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-[#1f2937]"
               )}
             >
-              <item.icon className="h-5 w-5" />
+              <item.icon className={cn("h-[18px] w-[18px]", isActive ? "text-white/90" : "")} />
               {item.label}
             </Link>
           );
@@ -113,10 +113,10 @@ export function Sidebar() {
       </nav>
 
       {/* User area */}
-      <div className="border-t px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#dbeafe] text-sm font-semibold text-[#2563eb] flex-shrink-0">
+      <div className="px-4 py-4">
+        <div className="flex items-center justify-between rounded-xl bg-gray-50/80 px-3 py-2.5">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#3730a3]/10 text-sm font-semibold text-[#3730a3] flex-shrink-0">
               {profile?.full_name
                 ? profile.full_name
                     .split(" ")
@@ -125,17 +125,17 @@ export function Sidebar() {
                 : "?"}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium">
+              <p className="truncate text-sm font-medium text-[#1f2937]">
                 {profile?.full_name ?? "Loading..."}
               </p>
-              <p className="truncate text-xs text-gray-500">
+              <p className="truncate text-[11px] text-gray-400">
                 {isAdmin ? "Platform Admin" : "Home Manager"}
               </p>
             </div>
           </div>
           <button
             onClick={signOut}
-            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            className="rounded-lg p-1.5 text-gray-400 hover:bg-white hover:text-gray-600 transition-colors"
             title="Sign out"
           >
             <LogOut className="h-4 w-4" />

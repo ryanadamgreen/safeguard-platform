@@ -182,7 +182,7 @@ export function UnknownDevicesSection({
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
-              <UserPlus className="h-5 w-5 text-blue-600" />
+              <UserPlus className="h-5 w-5 text-[#3730a3]" />
               Approve Device
             </DialogTitle>
           </DialogHeader>
