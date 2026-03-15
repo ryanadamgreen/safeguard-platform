@@ -39,6 +39,8 @@ import {
   Plus,
   Loader2,
   CheckCircle2,
+  Copy,
+  Settings2,
 } from "lucide-react";
 import { DEVICE_TYPE_LABELS } from "@/types";
 import type { Child, Device } from "@/types";
@@ -83,6 +85,7 @@ export function ChildrenSection({ children, devices, homeId }: ChildrenSectionPr
   const [scheduleModal, setScheduleModal] = useState<ScheduleForm | null>(null);
 
   // Add device modal state
+  const [setupTab, setSetupTab] = useState<"ios" | "android">("ios");
   const [addForChild, setAddForChild] = useState<Child | null>(null);
   const [addForm, setAddForm] = useState<AddDeviceForm>({
     name: "",
@@ -94,7 +97,18 @@ export function ChildrenSection({ children, devices, homeId }: ChildrenSectionPr
   const [addError, setAddError] = useState<string | null>(null);
   const [addedDevice, setAddedDevice] = useState<{ id: string; name: string } | null>(null);
 
+  const [setupDevice, setSetupDevice] = useState<Device | null>(null);
+  const [copied, setCopied] = useState(false);
   const origin = typeof window !== "undefined" ? window.location.origin : "";
+
+  const dohUrl = (deviceId: string) =>
+    `${origin}/api/dns-query/${deviceId}`;
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const toggleExpand = (childId: string) => {
     setExpanded((prev) => ({ ...prev, [childId]: !prev[childId] }));
@@ -334,15 +348,13 @@ export function ChildrenSection({ children, devices, homeId }: ChildrenSectionPr
                                     {getScheduleLabel(device.id)}
                                     <CalendarClock className="h-3 w-3 ml-1 text-[#3730a3]" />
                                   </button>
-                                  <a
-                                    href={`/api/mobileconfig/${device.id}`}
-                                    download
-                                    title="Download config profile"
+                                  <button
+                                    onClick={() => { setSetupDevice(device); setSetupTab("ios"); }}
                                     className="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-gray-200 transition-colors text-[#3730a3]"
                                   >
-                                    <Download className="h-3 w-3" />
-                                    Install Profile
-                                  </a>
+                                    <Settings2 className="h-3 w-3" />
+                                    Setup
+                                  </button>
                                 </div>
                                 <span>
                                   {device.last_connected
@@ -473,38 +485,79 @@ export function ChildrenSection({ children, devices, homeId }: ChildrenSectionPr
                 <div className="space-y-1">
                   <p className="font-semibold text-green-900">&ldquo;{addedDevice.name}&rdquo; registered</p>
                   <p className="text-sm text-green-700">
-                    Install the profile on the device to start monitoring.
+                    Follow the setup instructions for the device&apos;s platform.
                   </p>
                 </div>
               </div>
-              <div className="rounded-md border bg-gray-50 p-3">
-                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">
-                  Profile Install URL
-                </p>
-                <p className="break-all font-mono text-sm text-gray-700">
-                  {origin}/api/mobileconfig/{addedDevice.id}
-                </p>
+
+              {/* Platform tabs */}
+              <div className="flex rounded-md border border-gray-200 overflow-hidden text-xs font-medium">
+                <button
+                  onClick={() => setSetupTab("ios")}
+                  className={`flex-1 px-3 py-2 transition-colors ${
+                    setupTab === "ios" ? "bg-[#1f2937] text-white" : "text-gray-500 hover:bg-gray-50"
+                  }`}
+                >
+                  Apple (iOS)
+                </button>
+                <button
+                  onClick={() => setSetupTab("android")}
+                  className={`flex-1 px-3 py-2 border-l border-gray-200 transition-colors ${
+                    setupTab === "android" ? "bg-[#1f2937] text-white" : "text-gray-500 hover:bg-gray-50"
+                  }`}
+                >
+                  Android
+                </button>
               </div>
-              <div className="rounded-md border border-blue-100 bg-blue-50 p-3 text-xs text-blue-700 space-y-1">
-                <p className="font-semibold">iOS setup:</p>
-                <ol className="list-decimal list-inside space-y-0.5">
-                  <li>Open <strong>Safari</strong> on the child&apos;s phone and go to the URL above</li>
-                  <li>Tap <strong>Allow</strong> to download the profile</li>
-                  <li>Go to <strong>Settings → General → VPN &amp; Device Management</strong></li>
-                  <li>Tap the SafeGuard profile and tap <strong>Install</strong></li>
-                </ol>
-              </div>
-              <div className="flex gap-2">
-                <a href={`${origin}/api/mobileconfig/${addedDevice.id}`} download className="flex-1">
-                  <Button className="w-full gap-1.5 bg-[#3730a3] hover:bg-[#312e81]">
-                    <Download className="h-4 w-4" />
-                    Download Profile
-                  </Button>
-                </a>
-                <Button variant="outline" onClick={closeAddDevice}>
-                  Done
-                </Button>
-              </div>
+
+              {setupTab === "ios" ? (
+                <>
+                  <div className="rounded-md border border-blue-100 bg-blue-50 p-3 text-xs text-blue-700 space-y-1">
+                    <p className="font-semibold">iOS setup:</p>
+                    <ol className="list-decimal list-inside space-y-0.5">
+                      <li>Open <strong>Safari</strong> on the child&apos;s device</li>
+                      <li>Go to the profile URL below and tap <strong>Allow</strong></li>
+                      <li>Go to <strong>Settings → General → VPN &amp; Device Management</strong></li>
+                      <li>Tap the SafeGuard profile and tap <strong>Install</strong></li>
+                    </ol>
+                  </div>
+                  <div className="flex gap-2">
+                    <a href={`${origin}/api/mobileconfig/${addedDevice.id}`} download className="flex-1">
+                      <Button className="w-full gap-1.5 bg-[#3730a3] hover:bg-[#312e81]">
+                        <Download className="h-4 w-4" />
+                        Download Profile
+                      </Button>
+                    </a>
+                    <Button variant="outline" onClick={closeAddDevice}>Done</Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="rounded-md border border-green-100 bg-green-50 p-3 text-xs text-green-700 space-y-1">
+                    <p className="font-semibold">Android setup:</p>
+                    <ol className="list-decimal list-inside space-y-0.5">
+                      <li>Install <strong>Intra</strong> from the Google Play Store on the child&apos;s device</li>
+                      <li>Open Intra → tap <strong>Choose server</strong> → <strong>Custom server URL</strong></li>
+                      <li>Paste the DoH URL below and tap <strong>OK</strong></li>
+                      <li>Toggle Intra <strong>on</strong></li>
+                    </ol>
+                  </div>
+                  <div className="rounded-md border bg-gray-50 p-3">
+                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">DoH Server URL</p>
+                    <p className="break-all font-mono text-sm text-gray-700">{dohUrl(addedDevice.id)}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      className="flex-1 gap-1.5 bg-[#3730a3] hover:bg-[#312e81]"
+                      onClick={() => copyToClipboard(dohUrl(addedDevice.id))}
+                    >
+                      <Copy className="h-4 w-4" />
+                      {copied ? "Copied!" : "Copy URL"}
+                    </Button>
+                    <Button variant="outline" onClick={closeAddDevice}>Done</Button>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             /* Form state */
@@ -582,6 +635,88 @@ export function ChildrenSection({ children, devices, homeId }: ChildrenSectionPr
                 </Button>
               </div>
             </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Setup instructions modal for existing devices */}
+      <Dialog open={setupDevice !== null} onOpenChange={(open) => { if (!open) { setSetupDevice(null); setCopied(false); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Settings2 className="h-5 w-5 text-[#3730a3]" />
+              Setup: {setupDevice?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {setupDevice && (
+            <div className="space-y-4">
+              {/* Platform tabs */}
+              <div className="flex rounded-md border border-gray-200 overflow-hidden text-xs font-medium">
+                <button
+                  onClick={() => setSetupTab("ios")}
+                  className={`flex-1 px-3 py-2 transition-colors ${
+                    setupTab === "ios" ? "bg-[#1f2937] text-white" : "text-gray-500 hover:bg-gray-50"
+                  }`}
+                >
+                  Apple (iOS)
+                </button>
+                <button
+                  onClick={() => setSetupTab("android")}
+                  className={`flex-1 px-3 py-2 border-l border-gray-200 transition-colors ${
+                    setupTab === "android" ? "bg-[#1f2937] text-white" : "text-gray-500 hover:bg-gray-50"
+                  }`}
+                >
+                  Android
+                </button>
+              </div>
+
+              {setupTab === "ios" ? (
+                <>
+                  <div className="rounded-md border border-blue-100 bg-blue-50 p-3 text-xs text-blue-700 space-y-1">
+                    <p className="font-semibold">iOS setup:</p>
+                    <ol className="list-decimal list-inside space-y-0.5">
+                      <li>Open <strong>Safari</strong> on the child&apos;s device</li>
+                      <li>Go to the profile URL below and tap <strong>Allow</strong></li>
+                      <li>Go to <strong>Settings → General → VPN &amp; Device Management</strong></li>
+                      <li>Tap the SafeGuard profile and tap <strong>Install</strong></li>
+                    </ol>
+                  </div>
+                  <div className="rounded-md border bg-gray-50 p-3">
+                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">Profile URL</p>
+                    <p className="break-all font-mono text-sm text-gray-700">{origin}/api/mobileconfig/{setupDevice.id}</p>
+                  </div>
+                  <a href={`${origin}/api/mobileconfig/${setupDevice.id}`} download>
+                    <Button className="w-full gap-1.5 bg-[#3730a3] hover:bg-[#312e81]">
+                      <Download className="h-4 w-4" />
+                      Download Profile
+                    </Button>
+                  </a>
+                </>
+              ) : (
+                <>
+                  <div className="rounded-md border border-green-100 bg-green-50 p-3 text-xs text-green-700 space-y-1">
+                    <p className="font-semibold">Android setup:</p>
+                    <ol className="list-decimal list-inside space-y-0.5">
+                      <li>Install <strong>Intra</strong> from the Google Play Store on the child&apos;s device</li>
+                      <li>Open Intra → tap <strong>Choose server</strong> → <strong>Custom server URL</strong></li>
+                      <li>Paste the DoH URL below and tap <strong>OK</strong></li>
+                      <li>Toggle Intra <strong>on</strong></li>
+                    </ol>
+                  </div>
+                  <div className="rounded-md border bg-gray-50 p-3">
+                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">DoH Server URL</p>
+                    <p className="break-all font-mono text-sm text-gray-700">{dohUrl(setupDevice.id)}</p>
+                  </div>
+                  <Button
+                    className="w-full gap-1.5 bg-[#3730a3] hover:bg-[#312e81]"
+                    onClick={() => copyToClipboard(dohUrl(setupDevice.id))}
+                  >
+                    <Copy className="h-4 w-4" />
+                    {copied ? "Copied!" : "Copy URL"}
+                  </Button>
+                </>
+              )}
+            </div>
           )}
         </DialogContent>
       </Dialog>
