@@ -277,3 +277,61 @@ export function rootDomain(domain: string): string {
   }
   return parts.length >= 2 ? parts.slice(-2).join(".") : domain;
 }
+
+/**
+ * Returns true if the domain is background system noise that shouldn't appear
+ * in the "Activity" view. Covers: Apple system services, CDN infrastructure,
+ * analytics/tracking, certificate checks, time sync, ad tech, DNS infra.
+ */
+export function isNoiseDomain(domain: string): boolean {
+  const lower = domain.toLowerCase();
+  const parts = lower.split(".");
+  // Check against INFRA_DOMAIN_MAP
+  for (let i = 0; i < parts.length - 1; i++) {
+    const candidate = parts.slice(i).join(".");
+    if (INFRA_DOMAIN_MAP[candidate]) return true;
+  }
+  // Additional system/noise patterns not worth showing to care home managers
+  const noisePatterns = [
+    // Apple system services
+    "apple.com", "icloud.com", "mzstatic.com", "apple-dns.net",
+    "cdn-apple.com", "aaplimg.com", "apple-cloudkit.com",
+    "applebot.apple.com", "ls.apple.com", "push.apple.com",
+    "ess.apple.com", "gc.apple.com", "gs-loc.apple.com",
+    "itunes.apple.com", "swscan.apple.com", "xp.apple.com",
+    "setup.icloud.com", "keyvalueservice.icloud.com",
+    // Android system
+    "googleapis.com", "gstatic.com", "connectivitycheck.gstatic.com",
+    "android.clients.google.com", "mtalk.google.com",
+    // Certificate / OCSP
+    "ocsp.apple.com", "ocsp.digicert.com", "ocsp.sectigo.com",
+    "ocsp.pki.goog", "crl.apple.com", "valid.apple.com",
+    // NTP
+    "ntp.org", "time.apple.com", "time.cloudflare.com", "pool.ntp.org",
+    // DNS infrastructure
+    "cloudflare-dns.com", "dns.google", "dns.quad9.net",
+    // Analytics & tracking (hidden by default)
+    "google-analytics.com", "googletagmanager.com",
+    "googlesyndication.com", "googletagservices.com",
+    "doubleclick.net", "googleadservices.com",
+    "piano.io", "mparticle.com", "segment.io", "segment.com",
+    "mixpanel.com", "amplitude.com", "hotjar.com", "clarity.ms",
+    "newrelic.com", "nr-data.net", "sentry.io", "bugsnag.com",
+    "crashlytics.com", "firebase.io", "firebaseio.com",
+    "datadoghq.com", "fullstory.com",
+    // Ad networks
+    "moatads.com", "adnxs.com", "pubmatic.com", "criteo.com",
+    "rubiconproject.com", "taboola.com", "outbrain.com",
+    "adsrvr.org", "amazon-adsystem.com", "advertising.com",
+    // CDN patterns
+    "akamaiedge.net", "akamaized.net", "akadns.net", "edgekey.net",
+    "edgesuite.net", "cloudfront.net", "fastly.net", "fastlylb.net",
+    "llnwd.net", "cdn77.com", "keycdn.com", "bunnycdn.com",
+    "azurefd.net", "azureedge.net",
+  ];
+  for (let i = 0; i < parts.length - 1; i++) {
+    const candidate = parts.slice(i).join(".");
+    if (noisePatterns.includes(candidate)) return true;
+  }
+  return false;
+}

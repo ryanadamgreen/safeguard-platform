@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Radar, Pause, Play, Trash2, Loader2, ShieldX, LayoutGrid, List, HelpCircle } from "lucide-react";
+import {
+  Radar, Pause, Play, Trash2, Loader2, ShieldX,
+  LayoutGrid, List, Activity, Globe, Smartphone,
+} from "lucide-react";
 import { format } from "date-fns";
-import { rootDomain, detectService } from "@/lib/app-domains";
+import { rootDomain, detectService, isNoiseDomain } from "@/lib/app-domains";
 
 interface DnsEntry {
   id: string;
@@ -27,7 +30,6 @@ interface DnsEntry {
   timestamp: string;
 }
 
-// App colour palette — consistent colours per app across renders
 const APP_COLOURS: Record<string, string> = {
   "Instagram":           "bg-pink-100 text-pink-700",
   "TikTok":              "bg-gray-900 text-white",
@@ -61,20 +63,78 @@ const APP_COLOURS: Record<string, string> = {
   "LinkedIn":            "bg-blue-100 text-blue-700",
   "Google":              "bg-blue-100 text-blue-700",
   "Amazon":              "bg-orange-100 text-orange-700",
+  "Bing":                "bg-teal-100 text-teal-700",
+  "DuckDuckGo":          "bg-orange-100 text-orange-700",
 };
 
 function appColour(appName: string): string {
   return APP_COLOURS[appName] ?? "bg-violet-100 text-violet-700";
 }
 
-type FilterMode = "all" | "blocked" | "apps";
+// ── Activity grouping ──────────────────────────────────────────────────────
+
+interface ActivityGroup {
+  label: string;        // Display name: app name or root domain
+  isApp: boolean;       // true = known app, false = website
+  root: string;         // Root domain
+  count: number;
+  blocked: number;
+  firstSeen: string;
+  lastSeen: string;
+  devices: string[];
+  childInitials: string[];
+  domains: string[];    // All unique subdomains in this group
+}
+
+function buildActivityGroups(entries: DnsEntry[]): ActivityGroup[] {
+  const map = new Map<string, ActivityGroup>();
+
+  for (const e of entries) {
+    // Skip noise
+    if (!e.app_name && isNoiseDomain(e.domain)) continue;
+
+    const key = e.app_name ?? rootDomain(e.domain);
+    const existing = map.get(key);
+
+    if (existing) {
+      existing.count++;
+      if (e.blocked) existing.blocked++;
+      if (e.timestamp < existing.firstSeen) existing.firstSeen = e.timestamp;
+      if (e.timestamp > existing.lastSeen) existing.lastSeen = e.timestamp;
+      if (e.device_name && !existing.devices.includes(e.device_name)) existing.devices.push(e.device_name);
+      if (e.child_initials && !existing.childInitials.includes(e.child_initials)) existing.childInitials.push(e.child_initials);
+      if (!existing.domains.includes(e.domain)) existing.domains.push(e.domain);
+    } else {
+      map.set(key, {
+        label: e.app_name ?? rootDomain(e.domain),
+        isApp: !!e.app_name,
+        root: rootDomain(e.domain),
+        count: 1,
+        blocked: e.blocked ? 1 : 0,
+        firstSeen: e.timestamp,
+        lastSeen: e.timestamp,
+        devices: e.device_name ? [e.device_name] : [],
+        childInitials: e.child_initials ? [e.child_initials] : [],
+        domains: [e.domain],
+      });
+    }
+  }
+
+  return [...map.values()].sort(
+    (a, b) => new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime()
+  );
+}
+
+// ── Component ──────────────────────────────────────────────────────────────
+
+type FilterMode = "activity" | "all" | "blocked";
 
 export default function DnsMonitorPage() {
   const [entries, setEntries] = useState<DnsEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [live, setLive] = useState(true);
-  const [filter, setFilter] = useState<FilterMode>("all");
+  const [filter, setFilter] = useState<FilterMode>("activity");
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchLogs = async () => {
@@ -108,27 +168,11 @@ export default function DnsMonitorPage() {
   };
 
   const blockedCount = entries.filter((e) => e.blocked).length;
-  const appEntries = entries.filter((e) => e.app_name !== null);
-  const uniqueApps = [...new Set(entries.map((e) => e.app_name).filter(Boolean))] as string[];
+  const activityGroups = useMemo(() => buildActivityGroups(entries), [entries]);
+  const sitesCount = activityGroups.filter((g) => !g.isApp).length;
+  const appsCount = activityGroups.filter((g) => g.isApp).length;
 
-  // App summary: { appName → { count, blocked, lastSeen, devices } }
-  const appSummary = uniqueApps
-    .map((app) => {
-      const rows = entries.filter((e) => e.app_name === app);
-      return {
-        app,
-        count: rows.length,
-        blocked: rows.filter((r) => r.blocked).length,
-        lastSeen: rows[0]?.timestamp ?? null,
-        devices: [...new Set(rows.map((r) => r.device_name ?? r.device_id))],
-      };
-    })
-    .sort((a, b) => b.count - a.count);
-
-  const visible =
-    filter === "blocked" ? entries.filter((e) => e.blocked) :
-    filter === "apps"    ? appEntries :
-    entries;
+  const visible = filter === "blocked" ? entries.filter((e) => e.blocked) : entries;
 
   if (loading) {
     return (
@@ -148,7 +192,7 @@ export default function DnsMonitorPage() {
             DNS Monitor
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Real-time DNS queries from all connected SafeGuard devices
+            Real-time activity from all connected SafeGuard devices
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -167,20 +211,18 @@ export default function DnsMonitorPage() {
         </div>
       </div>
 
-      {/* Explainer */}
-      <div className="flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-        <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
-        <p>
-          Every website visit triggers DNS lookups for <strong>all resources on the page</strong> — CDNs, analytics, fonts, ads. Visiting <em>npr.org</em> may show <em>piano.io</em>, <em>fastly.net</em>, and others alongside it. The domain you typed will also appear in the list. Apps appear here once their DNS cache expires (usually within a few minutes of opening them).
-        </p>
-      </div>
-
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="py-4">
-            <p className="text-2xl font-bold text-[#1f2937]">{total.toLocaleString()}</p>
-            <p className="text-xs text-gray-500 mt-0.5">Total Queries</p>
+            <p className="text-2xl font-bold text-[#1f2937]">{sitesCount}</p>
+            <p className="text-xs text-gray-500 mt-0.5">Sites Visited</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="py-4">
+            <p className="text-2xl font-bold text-[#3730a3]">{appsCount}</p>
+            <p className="text-xs text-gray-500 mt-0.5">Apps Used</p>
           </CardContent>
         </Card>
         <Card>
@@ -193,77 +235,39 @@ export default function DnsMonitorPage() {
         </Card>
         <Card>
           <CardContent className="py-4">
-            <p className="text-2xl font-bold text-[#3730a3]">{uniqueApps.length}</p>
-            <p className="text-xs text-gray-500 mt-0.5">Apps Detected</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="py-4">
             <p className="text-2xl font-bold text-red-600">{blockedCount}</p>
             <p className="text-xs text-gray-500 mt-0.5">Blocked</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* App Summary Cards */}
-      {appSummary.length > 0 && (
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
-            Apps &amp; Services
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {appSummary.map(({ app, count, blocked }) => (
-              <button
-                key={app}
-                onClick={() => setFilter("apps")}
-                className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors hover:opacity-80 ${appColour(app)}`}
-              >
-                {app}
-                <span className="opacity-60">{count}</span>
-                {blocked > 0 && (
-                  <span className="flex items-center gap-0.5 text-red-600">
-                    <ShieldX className="h-2.5 w-2.5" />{blocked}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Query log */}
+      {/* Main card */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
-              Query Log
-              <Badge variant="secondary">{visible.length}</Badge>
+            <CardTitle className="text-base">
+              {filter === "activity" ? "Activity" : filter === "blocked" ? "Blocked Queries" : "All DNS Queries"}
             </CardTitle>
             {/* Filter tabs */}
-            <div className="flex rounded-md border border-gray-200 overflow-hidden text-xs font-medium">
+            <div className="flex rounded-xl border border-gray-200 overflow-hidden text-xs font-medium">
+              <button
+                onClick={() => setFilter("activity")}
+                className={`flex items-center gap-1 px-3 py-1.5 transition-colors ${
+                  filter === "activity" ? "bg-[#3730a3] text-white" : "text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                <Activity className="h-3 w-3" /> Activity
+              </button>
               <button
                 onClick={() => setFilter("all")}
-                className={`flex items-center gap-1 px-3 py-1.5 transition-colors ${
+                className={`flex items-center gap-1 px-3 py-1.5 border-l border-gray-200 transition-colors ${
                   filter === "all" ? "bg-[#1f2937] text-white" : "text-gray-500 hover:bg-gray-50"
                 }`}
               >
                 <List className="h-3 w-3" /> All
-              </button>
-              <button
-                onClick={() => setFilter("apps")}
-                className={`flex items-center gap-1 px-3 py-1.5 border-l border-gray-200 transition-colors ${
-                  filter === "apps" ? "bg-[#3730a3] text-white" : "text-gray-500 hover:bg-gray-50"
-                }`}
-              >
-                <LayoutGrid className="h-3 w-3" />
-                Apps
-                {appEntries.length > 0 && (
-                  <span className={`ml-1 rounded-full px-1.5 text-[10px] font-bold ${
-                    filter === "apps" ? "bg-indigo-400 text-white" : "bg-indigo-100 text-indigo-600"
-                  }`}>
-                    {appEntries.length}
-                  </span>
-                )}
+                <span className={`ml-1 rounded-full px-1.5 text-[10px] font-bold ${
+                  filter === "all" ? "bg-gray-500 text-white" : "bg-gray-100 text-gray-500"
+                }`}>{total}</span>
               </button>
               <button
                 onClick={() => setFilter("blocked")}
@@ -276,46 +280,86 @@ export default function DnsMonitorPage() {
                 {blockedCount > 0 && (
                   <span className={`ml-1 rounded-full px-1.5 text-[10px] font-bold ${
                     filter === "blocked" ? "bg-red-400 text-white" : "bg-red-100 text-red-600"
-                  }`}>
-                    {blockedCount}
-                  </span>
+                  }`}>{blockedCount}</span>
                 )}
               </button>
             </div>
           </div>
         </CardHeader>
         <CardContent className="px-0">
-          {/* Apps summary view */}
-          {filter === "apps" && appSummary.length > 0 ? (
+          {filter === "activity" ? (
+            /* ── Activity view: grouped by site/app, noise filtered ── */
             <div className="divide-y">
-              {appSummary.map(({ app, count, blocked, lastSeen, devices }) => (
-                <div key={app} className="flex items-center justify-between px-6 py-3">
-                  <div className="flex items-center gap-3">
-                    <Badge className={`text-xs border-0 ${appColour(app)}`}>{app}</Badge>
-                    <div>
-                      <p className="text-xs text-gray-500">
-                        {devices.slice(0, 2).join(", ")}
-                        {devices.length > 2 && ` +${devices.length - 2} more`}
-                      </p>
+              {activityGroups.map((group) => (
+                <div key={group.label} className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50/50 transition-colors">
+                  {/* Icon / badge */}
+                  <div className="flex-shrink-0">
+                    {group.isApp ? (
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-xl text-xs font-bold ${appColour(group.label)}`}>
+                        {group.label.slice(0, 2).toUpperCase()}
+                      </div>
+                    ) : (
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 text-gray-500">
+                        <Globe className="h-4 w-4" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Details */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      {group.isApp ? (
+                        <Badge className={`text-[11px] border-0 px-2 py-0 ${appColour(group.label)}`}>
+                          {group.label}
+                        </Badge>
+                      ) : (
+                        <p className="text-sm font-medium text-[#1f2937] truncate">
+                          {group.label}
+                        </p>
+                      )}
+                      {group.blocked > 0 && (
+                        <Badge className="bg-red-100 text-red-700 border-0 text-[10px] px-1.5 py-0 gap-0.5">
+                          <ShieldX className="h-2.5 w-2.5" /> {group.blocked}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5 text-[11px] text-gray-400">
+                      {group.childInitials.length > 0 && (
+                        <span className="flex items-center gap-1">
+                          {group.childInitials.map((ci) => (
+                            <span key={ci} className="flex h-4 w-4 items-center justify-center rounded-full bg-[#dbeafe] text-[8px] font-bold text-[#2563eb]">
+                              {ci}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <Smartphone className="h-3 w-3" />
+                        {group.devices.join(", ") || "Unknown"}
+                      </span>
+                      <span>{group.count} queries</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-gray-400">
-                    {blocked > 0 && (
-                      <span className="flex items-center gap-1 text-red-500">
-                        <ShieldX className="h-3 w-3" /> {blocked} blocked
-                      </span>
-                    )}
-                    <span>{count} queries</span>
-                    {lastSeen && (
-                      <span className="hidden sm:inline">
-                        Last: {format(new Date(lastSeen), "HH:mm:ss")}
-                      </span>
-                    )}
+
+                  {/* Time */}
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xs text-gray-500 font-mono">
+                      {format(new Date(group.lastSeen), "HH:mm")}
+                    </p>
+                    <p className="text-[10px] text-gray-400">
+                      {format(new Date(group.lastSeen), "dd MMM")}
+                    </p>
                   </div>
                 </div>
               ))}
+              {activityGroups.length === 0 && (
+                <div className="py-12 text-center text-gray-400 text-sm">
+                  No activity yet. Sites and apps will appear here as devices browse the internet.
+                </div>
+              )}
             </div>
           ) : (
+            /* ── Raw log view (All / Blocked) ── */
             <div className="max-h-[600px] overflow-y-auto">
               <Table>
                 <TableHeader>
@@ -389,9 +433,7 @@ export default function DnsMonitorPage() {
                     <TableRow>
                       <TableCell colSpan={4} className="py-12 text-center text-gray-400 text-sm">
                         {filter === "blocked"
-                          ? "No blocked queries in the current view."
-                          : filter === "apps"
-                          ? "No recognised app traffic yet. Browsing social media, streaming, or gaming apps will appear here."
+                          ? "No blocked queries."
                           : "No DNS queries received yet. Install a SafeGuard profile on a device to start monitoring."}
                       </TableCell>
                     </TableRow>
