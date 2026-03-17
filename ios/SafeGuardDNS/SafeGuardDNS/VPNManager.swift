@@ -1,79 +1,167 @@
 import Foundation
+import NetworkExtension
 
-class DNSManager: ObservableObject {
-    @Published var isActive = false
+class TunnelManager: ObservableObject {
+    @Published var isConnected = false
     @Published var isLoading = false
-    @Published var statusText = "Not Registered"
+    @Published var statusText = "Disconnected"
+
+    private var manager: NETunnelProviderManager?
 
     var deviceId: String {
-        if let stored = UserDefaults.standard.string(forKey: "safeguard_device_id") {
+        let defaults = UserDefaults(suiteName: "group.com.safeguard.dns") ?? .standard
+        if let stored = defaults.string(forKey: "safeguard_device_id") {
             return stored
         }
-        let newId = UUID().uuidString
+        let newId = UUID().uuidString.lowercased()
+        defaults.set(newId, forKey: "safeguard_device_id")
+        // Also store in standard defaults for the main app
         UserDefaults.standard.set(newId, forKey: "safeguard_device_id")
         return newId
     }
 
-    var deviceName: String {
-        ProcessInfo.processInfo.hostName
-    }
-
     init() {
-        checkStatus()
+        loadManager()
+        observeStatus()
     }
 
-    func checkStatus() {
-        guard let url = URL(string: "\(APIClient.serverURL)/api/devices/\(deviceId)") else { return }
-        URLSession.shared.dataTask(with: url) { [weak self] _, response, _ in
-            DispatchQueue.main.async {
-                let active = (response as? HTTPURLResponse)?.statusCode == 200
-                self?.isActive = active
-                self?.statusText = active ? "Active" : "Not Active"
+    // MARK: - Load existing VPN configuration
+
+    private func loadManager() {
+        NETunnelProviderManager.loadAllFromPreferences { [weak self] managers, error in
+            guard let self = self else { return }
+            if let error = error {
+                print("[SafeGuard] Load error: \(error.localizedDescription)")
+                return
             }
-        }.resume()
+            DispatchQueue.main.async {
+                self.manager = managers?.first
+                self.updateStatus()
+            }
+        }
     }
 
-    func activate() {
-        isLoading = true
-        guard let url = URL(string: "\(APIClient.serverURL)/api/devices/register") else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try? JSONSerialization.data(withJSONObject: [
-            "device_id": deviceId,
-            "device_name": deviceName
-        ])
-        URLSession.shared.dataTask(with: request) { [weak self] _, response, error in
-            DispatchQueue.main.async {
-                self?.isLoading = false
-                if let error = error {
-                    print("[SafeGuard] Register error: \(error.localizedDescription)")
-                    self?.statusText = "Failed: \(error.localizedDescription)"
-                    return
-                }
-                self?.isActive = true
-                self?.statusText = "Active"
-                print("[SafeGuard] Device registered: \(self?.deviceId ?? "")")
-            }
-        }.resume()
+    // MARK: - Observe VPN status changes
+
+    private func observeStatus() {
+        NotificationCenter.default.addObserver(
+            forName: .NEVPNStatusDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.updateStatus()
+        }
     }
 
-    func deactivate() {
-        isLoading = true
-        guard let url = URL(string: "\(APIClient.serverURL)/api/devices/\(deviceId)") else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "DELETE"
-        URLSession.shared.dataTask(with: request) { [weak self] _, _, _ in
-            DispatchQueue.main.async {
-                self?.isLoading = false
-                self?.isActive = false
-                self?.statusText = "Not Active"
-                print("[SafeGuard] Device unregistered")
-            }
-        }.resume()
+    private func updateStatus() {
+        guard let connection = manager?.connection else {
+            isConnected = false
+            statusText = "Not Configured"
+            return
+        }
+        switch connection.status {
+        case .connected:
+            isConnected = true
+            statusText = "Monitoring Active"
+        case .connecting:
+            isConnected = false
+            statusText = "Connecting..."
+        case .disconnecting:
+            isConnected = true
+            statusText = "Disconnecting..."
+        case .disconnected:
+            isConnected = false
+            statusText = "Disconnected"
+        case .invalid:
+            isConnected = false
+            statusText = "Invalid"
+        case .reasserting:
+            isConnected = true
+            statusText = "Reconnecting..."
+        @unknown default:
+            isConnected = false
+            statusText = "Unknown"
+        }
     }
+
+    // MARK: - Toggle
 
     func toggle() {
-        if isActive { deactivate() } else { activate() }
+        if isConnected {
+            disconnect()
+        } else {
+            connect()
+        }
+    }
+
+    // MARK: - Connect
+
+    func connect() {
+        isLoading = true
+
+        if let existing = manager {
+            startTunnel(existing)
+        } else {
+            // Create a new VPN configuration
+            let manager = NETunnelProviderManager()
+            let proto = NETunnelProviderProtocol()
+            proto.providerBundleIdentifier = "com.safeguard.dns.tunnel"
+            proto.serverAddress = "SafeGuard DNS"
+            proto.providerConfiguration = [
+                "deviceId": deviceId,
+                "serverURL": APIClient.serverURL,
+                "supabaseURL": APIClient.supabaseURL,
+                "supabaseAnonKey": APIClient.supabaseAnonKey,
+            ]
+            manager.protocolConfiguration = proto
+            manager.localizedDescription = "SafeGuard DNS Monitor"
+            manager.isEnabled = true
+
+            manager.saveToPreferences { [weak self] error in
+                if let error = error {
+                    print("[SafeGuard] Save error: \(error.localizedDescription)")
+                    DispatchQueue.main.async {
+                        self?.isLoading = false
+                        self?.statusText = "Setup failed"
+                    }
+                    return
+                }
+                // Must reload after saving
+                manager.loadFromPreferences { [weak self] error in
+                    if let error = error {
+                        print("[SafeGuard] Reload error: \(error.localizedDescription)")
+                    }
+                    DispatchQueue.main.async {
+                        self?.manager = manager
+                        self?.startTunnel(manager)
+                    }
+                }
+            }
+        }
+    }
+
+    private func startTunnel(_ manager: NETunnelProviderManager) {
+        do {
+            try manager.connection.startVPNTunnel()
+        } catch {
+            print("[SafeGuard] Start error: \(error.localizedDescription)")
+            DispatchQueue.main.async {
+                self.isLoading = false
+                self.statusText = "Start failed"
+            }
+        }
+        DispatchQueue.main.async {
+            self.isLoading = false
+        }
+    }
+
+    // MARK: - Disconnect
+
+    func disconnect() {
+        isLoading = true
+        manager?.connection.stopVPNTunnel()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.isLoading = false
+        }
     }
 }

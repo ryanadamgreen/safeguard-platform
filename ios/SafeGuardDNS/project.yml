@@ -4,6 +4,7 @@ options:
   deploymentTarget:
     iOS: "16.0"
   xcodeVersion: "16.2"
+  groupSortPosition: top
 
 settings:
   base:
@@ -14,6 +15,7 @@ schemes:
     build:
       targets:
         SafeGuardDNS: all
+        PacketTunnelExtension: all
     run:
       config: Debug
       executable: SafeGuardDNS
@@ -33,3 +35,20 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.safeguard.dns
         INFOPLIST_FILE: SafeGuardDNS/Info.plist
         CODE_SIGN_ENTITLEMENTS: SafeGuardDNS/SafeGuardDNS.entitlements
+    dependencies:
+      - target: PacketTunnelExtension
+
+  PacketTunnelExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - PacketTunnelExtension
+    info:
+      path: PacketTunnelExtension/Info.plist
+    entitlements:
+      path: PacketTunnelExtension/PacketTunnelExtension.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.safeguard.dns.tunnel
+        INFOPLIST_FILE: PacketTunnelExtension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: PacketTunnelExtension/PacketTunnelExtension.entitlements

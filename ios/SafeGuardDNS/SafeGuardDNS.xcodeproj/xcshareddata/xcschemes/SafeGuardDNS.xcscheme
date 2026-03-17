@@ -15,6 +15,20 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "19AEDA814EF786187367C9FC"
+               BuildableName = "PacketTunnelExtension.appex"
+               BlueprintName = "PacketTunnelExtension"
+               ReferencedContainer = "container:SafeGuardDNS.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "BC5971AC00A3DC955252D839"
                BuildableName = "SafeGuardDNS.app"
                BlueprintName = "SafeGuardDNS"

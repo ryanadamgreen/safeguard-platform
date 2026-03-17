@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var dnsManager = DNSManager()
+    @StateObject private var tunnel = TunnelManager()
 
     var body: some View {
         VStack(spacing: 32) {
@@ -9,9 +9,14 @@ struct ContentView: View {
 
             // Logo and title
             VStack(spacing: 8) {
-                Image(systemName: "shield.checkered")
-                    .font(.system(size: 64))
-                    .foregroundStyle(.blue)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color(red: 0.216, green: 0.188, blue: 0.639)) // #3730a3
+                        .frame(width: 80, height: 80)
+                    Image(systemName: "shield.checkered")
+                        .font(.system(size: 36))
+                        .foregroundStyle(.white)
+                }
 
                 Text("SafeGuard")
                     .font(.largeTitle)
@@ -25,41 +30,41 @@ struct ContentView: View {
             // Status indicator
             VStack(spacing: 8) {
                 Circle()
-                    .fill(dnsManager.isActive ? Color.green : Color.red)
+                    .fill(tunnel.isConnected ? Color.green : Color.red.opacity(0.6))
                     .frame(width: 16, height: 16)
-                    .shadow(color: dnsManager.isActive ? .green.opacity(0.5) : .clear, radius: 8)
+                    .shadow(color: tunnel.isConnected ? .green.opacity(0.5) : .clear, radius: 8)
 
-                Text(dnsManager.statusText)
+                Text(tunnel.statusText)
                     .font(.headline)
-                    .foregroundStyle(dnsManager.isActive ? .green : .secondary)
+                    .foregroundStyle(tunnel.isConnected ? .green : .secondary)
             }
             .padding()
             .frame(maxWidth: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(dnsManager.isActive ? Color.green.opacity(0.08) : Color.gray.opacity(0.08))
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(tunnel.isConnected ? Color.green.opacity(0.06) : Color.gray.opacity(0.06))
             )
             .padding(.horizontal, 32)
 
             // Connect button
-            Button(action: { dnsManager.toggle() }) {
+            Button(action: { tunnel.toggle() }) {
                 HStack {
-                    if dnsManager.isLoading {
+                    if tunnel.isLoading {
                         ProgressView()
                             .tint(.white)
                     } else {
-                        Image(systemName: dnsManager.isActive ? "stop.fill" : "play.fill")
+                        Image(systemName: tunnel.isConnected ? "stop.fill" : "play.fill")
                     }
-                    Text(dnsManager.isActive ? "Deactivate" : "Activate")
+                    Text(tunnel.isConnected ? "Stop Monitoring" : "Start Monitoring")
                         .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
-                .background(dnsManager.isActive ? Color.red : Color.blue)
+                .background(tunnel.isConnected ? Color.red : Color(red: 0.216, green: 0.188, blue: 0.639))
                 .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
             }
-            .disabled(dnsManager.isLoading)
+            .disabled(tunnel.isLoading)
             .padding(.horizontal, 32)
 
             // Device info
@@ -67,7 +72,7 @@ struct ContentView: View {
                 Text("Device ID")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text(dnsManager.deviceId)
+                Text(tunnel.deviceId)
                     .font(.caption2)
                     .monospaced()
                     .foregroundStyle(.secondary)
@@ -77,16 +82,16 @@ struct ContentView: View {
             .padding()
             .frame(maxWidth: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 16)
                     .fill(Color.gray.opacity(0.06))
             )
             .padding(.horizontal, 32)
 
             Spacer()
 
-            // Server info
+            // Footer
             VStack(spacing: 2) {
-                Text("DNS routed through")
+                Text("DNS queries are monitored for safeguarding")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                 Text(APIClient.serverURL)

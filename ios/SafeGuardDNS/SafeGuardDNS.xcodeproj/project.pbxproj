@@ -12,16 +12,48 @@
 		62D5773715BBFA50B5670076 /* DNSQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D2CA52B70362060285416F8 /* DNSQuery.swift */; };
 		89FE98245B6CA6E3D686C527 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79615D27111460D5C440B3B1 /* APIClient.swift */; };
 		C28336E85F51FC70C5FDD42A /* VPNManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11F38C91A9679EC96F837AC5 /* VPNManager.swift */; };
+		C921DFB5294FE1B2F68C473F /* PacketTunnelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CCBF552DA56EA22AE6FF54F /* PacketTunnelProvider.swift */; };
+		E8893D4895786493D85991DA /* PacketTunnelExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4C64210275A9915F08B402DB /* PacketTunnelExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		FEB0ABE22477B2A160B9E454 /* DNSParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DF11BC5B87D64810BE2D8AC /* DNSParser.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		41B6D8C767081BA2A7A325C4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 923A53D15F3F451AF048628B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 19AEDA814EF786187367C9FC;
+			remoteInfo = PacketTunnelExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		D3D2B052D3AEB530EE2BA7FE /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				E8893D4895786493D85991DA /* PacketTunnelExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		0CCBF552DA56EA22AE6FF54F /* PacketTunnelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketTunnelProvider.swift; sourceTree = "<group>"; };
 		11F38C91A9679EC96F837AC5 /* VPNManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VPNManager.swift; sourceTree = "<group>"; };
 		1CFF4BC79FA2E78AF86E12CA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		4C64210275A9915F08B402DB /* PacketTunnelExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = PacketTunnelExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		61FAA1CA02251911F8567F0D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		66079FF0D1B4936DF4B987E1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6D2CA52B70362060285416F8 /* DNSQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DNSQuery.swift; sourceTree = "<group>"; };
 		79615D27111460D5C440B3B1 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
-		83BE57AC6E9243A881E903EC /* SafeGuardDNS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SafeGuardDNS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7DF11BC5B87D64810BE2D8AC /* DNSParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DNSParser.swift; sourceTree = "<group>"; };
+		83BE57AC6E9243A881E903EC /* SafeGuardDNS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SafeGuardDNS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A39E4E427F068A84C9937A6E /* SafeGuardDNSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeGuardDNSApp.swift; sourceTree = "<group>"; };
+		CD3292C3DE30D8DBF93C1F1E /* PacketTunnelExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PacketTunnelExtension.entitlements; sourceTree = "<group>"; };
 		D849AA3C76541AFE926AFC97 /* SafeGuardDNS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SafeGuardDNS.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -29,6 +61,7 @@
 		58FB208FE0BA850D0554E695 /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				4C64210275A9915F08B402DB /* PacketTunnelExtension.appex */,
 				83BE57AC6E9243A881E903EC /* SafeGuardDNS.app */,
 			);
 			name = Products;
@@ -45,13 +78,13 @@
 		BB9D62CE87F869A16C9F5EC9 /* SafeGuardDNS */ = {
 			isa = PBXGroup;
 			children = (
+				B97CE299C946909229A73124 /* Models */,
+				DCFEE00E8873F9BCD3D66E82 /* Network */,
 				1CFF4BC79FA2E78AF86E12CA /* ContentView.swift */,
 				61FAA1CA02251911F8567F0D /* Info.plist */,
 				D849AA3C76541AFE926AFC97 /* SafeGuardDNS.entitlements */,
 				A39E4E427F068A84C9937A6E /* SafeGuardDNSApp.swift */,
 				11F38C91A9679EC96F837AC5 /* VPNManager.swift */,
-				B97CE299C946909229A73124 /* Models */,
-				DCFEE00E8873F9BCD3D66E82 /* Network */,
 			);
 			path = SafeGuardDNS;
 			sourceTree = "<group>";
@@ -59,9 +92,21 @@
 		C2FDA6929FD7028217B37DF9 = {
 			isa = PBXGroup;
 			children = (
+				D28AF26E361FAD4474DF1C27 /* PacketTunnelExtension */,
 				BB9D62CE87F869A16C9F5EC9 /* SafeGuardDNS */,
 				58FB208FE0BA850D0554E695 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		D28AF26E361FAD4474DF1C27 /* PacketTunnelExtension */ = {
+			isa = PBXGroup;
+			children = (
+				7DF11BC5B87D64810BE2D8AC /* DNSParser.swift */,
+				66079FF0D1B4936DF4B987E1 /* Info.plist */,
+				CD3292C3DE30D8DBF93C1F1E /* PacketTunnelExtension.entitlements */,
+				0CCBF552DA56EA22AE6FF54F /* PacketTunnelProvider.swift */,
+			);
+			path = PacketTunnelExtension;
 			sourceTree = "<group>";
 		};
 		DCFEE00E8873F9BCD3D66E82 /* Network */ = {
@@ -75,15 +120,34 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		19AEDA814EF786187367C9FC /* PacketTunnelExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 363E29B46826964B1272C373 /* Build configuration list for PBXNativeTarget "PacketTunnelExtension" */;
+			buildPhases = (
+				4120F6EA974AB71D84C46962 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PacketTunnelExtension;
+			packageProductDependencies = (
+			);
+			productName = PacketTunnelExtension;
+			productReference = 4C64210275A9915F08B402DB /* PacketTunnelExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		BC5971AC00A3DC955252D839 /* SafeGuardDNS */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 48D0B567473C24CB1FAD0477 /* Build configuration list for PBXNativeTarget "SafeGuardDNS" */;
 			buildPhases = (
 				32AAEF7089D150FD4DC75CD5 /* Sources */,
+				D3D2B052D3AEB530EE2BA7FE /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A7493A602764EBD41A4CEA2B /* PBXTargetDependency */,
 			);
 			name = SafeGuardDNS;
 			packageProductDependencies = (
@@ -100,6 +164,8 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1620;
+				TargetAttributes = {
+				};
 			};
 			buildConfigurationList = 78BE074F6F1A4358CE5BD102 /* Build configuration list for PBXProject "SafeGuardDNS" */;
 			developmentRegion = en;
@@ -115,6 +181,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				19AEDA814EF786187367C9FC /* PacketTunnelExtension */,
 				BC5971AC00A3DC955252D839 /* SafeGuardDNS */,
 			);
 		};
@@ -133,9 +200,42 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4120F6EA974AB71D84C46962 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FEB0ABE22477B2A160B9E454 /* DNSParser.swift in Sources */,
+				C921DFB5294FE1B2F68C473F /* PacketTunnelProvider.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		A7493A602764EBD41A4CEA2B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 19AEDA814EF786187367C9FC /* PacketTunnelExtension */;
+			targetProxy = 41B6D8C767081BA2A7A325C4 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		1770609137DDFEE1046028CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PacketTunnelExtension/PacketTunnelExtension.entitlements;
+				INFOPLIST_FILE = PacketTunnelExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.safeguard.dns.tunnel;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		1EB1DA200D515A7A9A90E5CF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -255,13 +355,28 @@
 			};
 			name = Release;
 		};
+		2AF132EA35B69E908687A757 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PacketTunnelExtension/PacketTunnelExtension.entitlements;
+				INFOPLIST_FILE = PacketTunnelExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.safeguard.dns.tunnel;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 		665022656696AC31930EB48B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = SafeGuardDNS/SafeGuardDNS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 47JS4GZKXX;
 				INFOPLIST_FILE = SafeGuardDNS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -279,7 +394,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = SafeGuardDNS/SafeGuardDNS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 47JS4GZKXX;
 				INFOPLIST_FILE = SafeGuardDNS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -294,6 +408,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		363E29B46826964B1272C373 /* Build configuration list for PBXNativeTarget "PacketTunnelExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2AF132EA35B69E908687A757 /* Debug */,
+				1770609137DDFEE1046028CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		48D0B567473C24CB1FAD0477 /* Build configuration list for PBXNativeTarget "SafeGuardDNS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
